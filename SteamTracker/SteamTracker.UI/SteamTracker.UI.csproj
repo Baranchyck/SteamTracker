@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\SteamTracker.DataAccess\SteamTracker.DataAccess.csproj" />
+    <ProjectReference Include="..\SteamTracker.Domain\SteamTracker.Domain.csproj" />
+    <ProjectReference Include="..\SteamTracker.Integrations\SteamTracker.Integrations.csproj" />
+    <ProjectReference Include="..\SteamTracker.Services\SteamTracker.Services.csproj" />
+  </ItemGroup>
+
+</Project>

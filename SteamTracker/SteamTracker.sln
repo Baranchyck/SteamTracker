@@ -1,0 +1,55 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.13.35913.81 d17.13
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SteamTracker.Services", "SteamTracker.Services\SteamTracker.Services.csproj", "{6CBC87C6-C4DD-4AEC-918A-761BCEE93575}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SteamTracker.DataAccess", "SteamTracker.DataAccess\SteamTracker.DataAccess.csproj", "{94AC8D58-ED50-487B-B1A6-DDF81761AE42}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SteamTracker.Integrations", "SteamTracker.Integrations\SteamTracker.Integrations.csproj", "{675A90D0-2596-49E8-A71F-68CB7C22822A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SteamTracker.UI", "SteamTracker.UI\SteamTracker.UI.csproj", "{CCE74902-4DFC-44ED-856C-C28B3A508D39}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SteamTracker.Tests", "SteamTracker.Tests\SteamTracker.Tests.csproj", "{A2CDFA9E-B82B-4C52-BBE9-BDF9B92AABC3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SteamTracker.Domain", "SteamTracker.Domain\SteamTracker.Domain.csproj", "{074307D8-8BAF-41D2-AC18-DA69E5AD8630}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{6CBC87C6-C4DD-4AEC-918A-761BCEE93575}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6CBC87C6-C4DD-4AEC-918A-761BCEE93575}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6CBC87C6-C4DD-4AEC-918A-761BCEE93575}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6CBC87C6-C4DD-4AEC-918A-761BCEE93575}.Release|Any CPU.Build.0 = Release|Any CPU
+		{94AC8D58-ED50-487B-B1A6-DDF81761AE42}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{94AC8D58-ED50-487B-B1A6-DDF81761AE42}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{94AC8D58-ED50-487B-B1A6-DDF81761AE42}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{94AC8D58-ED50-487B-B1A6-DDF81761AE42}.Release|Any CPU.Build.0 = Release|Any CPU
+		{675A90D0-2596-49E8-A71F-68CB7C22822A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{675A90D0-2596-49E8-A71F-68CB7C22822A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{675A90D0-2596-49E8-A71F-68CB7C22822A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{675A90D0-2596-49E8-A71F-68CB7C22822A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CCE74902-4DFC-44ED-856C-C28B3A508D39}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CCE74902-4DFC-44ED-856C-C28B3A508D39}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CCE74902-4DFC-44ED-856C-C28B3A508D39}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CCE74902-4DFC-44ED-856C-C28B3A508D39}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A2CDFA9E-B82B-4C52-BBE9-BDF9B92AABC3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A2CDFA9E-B82B-4C52-BBE9-BDF9B92AABC3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A2CDFA9E-B82B-4C52-BBE9-BDF9B92AABC3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A2CDFA9E-B82B-4C52-BBE9-BDF9B92AABC3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{074307D8-8BAF-41D2-AC18-DA69E5AD8630}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{074307D8-8BAF-41D2-AC18-DA69E5AD8630}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{074307D8-8BAF-41D2-AC18-DA69E5AD8630}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{074307D8-8BAF-41D2-AC18-DA69E5AD8630}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {568BC5BF-7EA8-4AF2-A717-AE0F83245964}
+	EndGlobalSection
+EndGlobal
