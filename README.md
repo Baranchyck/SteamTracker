@@ -22,6 +22,10 @@
 * **Distribution**: Standalone desktop executable (`.exe`).
 
 ---
+### 🎨 UI / UX Design
+
+- **Figma Mockup:** [Steam Tracker — MVP UI](https://www.figma.com/design/6Z4XOLw3wlAcGxuiU5hB24/Steam-Tracker-%E2%80%94-MVP-UI?node-id=0-1&t=uQr06bjPcrxYmDew-1)
+---
 
 ## 🏛 System Architecture & Solution Structure
 
