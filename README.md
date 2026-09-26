@@ -29,6 +29,13 @@ The project follows a modular, layered architecture inspired by Clean/Onion prin
 
 ---
 
+## Database structure
+
+- [Модель даних (ER-діаграма, dbdiagram.io)](https://dbdiagram.io/d/твій-id-діаграми)
+- [SQL DDL](docs/schema.sql)
+
+---
+
 ### 📐 High-Level Architecture & Dependency Flow
 
 ```text
