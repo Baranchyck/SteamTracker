@@ -81,4 +81,7 @@ SteamTracker/
     ├── SteamTracker.UI/              # Desktop client (WPF/WinForms)
     └── SteamTracker.Tests/           # xUnit & Moq test suite
 ```
+## 🎨 Design
+
+[View Figma mockup](https://www.figma.com/design/6Z4XOLw3wlAcGxuiU5hB24/Steam-Tracker-%E2%80%94-MVP-UI?node-id=0-1&t=vKiXKCWZm9q1LLVx-1)
 
