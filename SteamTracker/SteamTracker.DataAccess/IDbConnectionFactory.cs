@@ -8,7 +8,7 @@ using System.Data;
 
 namespace SteamTracker.DataAccess
 {
-    internal interface IDbConnectionFactory
+    public interface IDbConnectionFactory
     {
         IDbConnection CreateConnection();
     }

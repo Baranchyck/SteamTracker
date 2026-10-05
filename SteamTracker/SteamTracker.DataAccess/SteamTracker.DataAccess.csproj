@@ -13,5 +13,8 @@
   <ItemGroup>
     <ProjectReference Include="..\SteamTracker.Domain\SteamTracker.Domain.csproj" />
   </ItemGroup>
-
+  
+  <ItemGroup>
+	<EmbeddedResource Include="..\..\docs\schema.sql" LogicalName="schema.sql" />
+  </ItemGroup>
 </Project>

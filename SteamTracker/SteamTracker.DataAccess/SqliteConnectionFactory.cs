@@ -17,7 +17,7 @@ namespace SteamTracker.DataAccess
             _connectionString = new SqliteConnectionStringBuilder
             {
                 DataSource = databasePath,
-                Mode = SqliteOpenMode.ReadWriteCreate
+                Mode = SqliteOpenMode.ReadWriteCreate,
                 ForeignKeys = true
             }.ToString();
         }
