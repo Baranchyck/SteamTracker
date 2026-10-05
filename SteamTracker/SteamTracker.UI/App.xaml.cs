@@ -9,6 +9,22 @@ namespace SteamTracker.UI
         {
             base.OnStartup(e);
 
+            try
+            {
+                var factory = new SqliteConnectionFactory(SqliteConnectionFactory.GetDefaultPath());
+                new DatabaseInitializer(factory).Initialize();
+            }
+            catch (Exception ex)
+            {
+                // TODO: залогувати ex (коли з'явиться логер)
+                MessageBox.Show(
+                    "Не вдалося ініціалізувати базу даних.\n" + ex.Message,
+                    "SteamTracker",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+                Shutdown(1);
+                return;
+            }
         }
     }
 }
