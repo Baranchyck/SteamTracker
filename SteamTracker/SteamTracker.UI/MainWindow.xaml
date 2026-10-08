@@ -47,8 +47,8 @@
                 </Border>
 
                 <!-- Пункти меню. Tag — ключ екрана, за яким відкриватиметься потрібний модуль -->
-                <StackPanel DockPanel.Dock="Top">
-                    <RadioButton Style="{StaticResource NavItem}" GroupName="Nav" Content="Головна" Tag="Home" IsChecked="True" />
+                <StackPanel DockPanel.Dock="Top" RadioButton.Checked="NavItem_Checked">
+                    <RadioButton x:Name="HomeNavItem" Style="{StaticResource NavItem}" GroupName="Nav" Content="Головна" Tag="Home" />
                     <RadioButton Style="{StaticResource NavItem}" GroupName="Nav" Content="Досягнення" Tag="AchievementPlanner" />
                     <RadioButton Style="{StaticResource NavItem}" GroupName="Nav" Content="Час гри з друзями" Tag="Comparison" />
                     <RadioButton Style="{StaticResource NavItem}" GroupName="Nav" Content="Друзі-радар" Tag="FriendsRadar" />
