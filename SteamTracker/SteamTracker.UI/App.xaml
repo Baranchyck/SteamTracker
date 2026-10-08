@@ -4,6 +4,13 @@
              xmlns:local="clr-namespace:SteamTracker.UI"
              StartupUri="MainWindow.xaml">
     <Application.Resources>
-         
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <!-- Порядок важливий: Colors першим, бо інші файли використовують його кольори -->
+                <ResourceDictionary Source="Styles/Colors.xaml" />
+                <ResourceDictionary Source="Styles/Text.xaml" />
+                <ResourceDictionary Source="Styles/Controls.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
     </Application.Resources>
 </Application>
