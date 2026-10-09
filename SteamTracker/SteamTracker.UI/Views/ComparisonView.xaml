@@ -1,0 +1,12 @@
+<UserControl x:Class="SteamTracker.UI.Views.ComparisonView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <StackPanel>
+        <TextBlock Text="Час гри з друзями" Style="{StaticResource Title}" />
+        <TextBlock Text="Порівняй свій час у грі з друзями" Style="{StaticResource Muted}" Margin="0,4,0,24" />
+
+        <Border Style="{StaticResource Card}">
+            <TextBlock Text="Екран у розробці" Style="{StaticResource Muted}" />
+        </Border>
+    </StackPanel>
+</UserControl>
