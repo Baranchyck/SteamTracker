@@ -1,4 +1,4 @@
-﻿namespace SteamTracker.Services.Exceptions;
+﻿namespace SteamTracker.Domain.Exceptions;
 
 public class AuthCancelledException : Exception
 {

@@ -1,4 +1,4 @@
-﻿namespace SteamTracker.Services.Models;
+﻿namespace SteamTracker.Domain.Models;
 
 public record OwnedGame(
     int AppId,

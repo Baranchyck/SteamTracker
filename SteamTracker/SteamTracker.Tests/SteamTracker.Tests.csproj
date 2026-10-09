@@ -17,7 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\SteamTracker.Domain\SteamTracker.Domain.csproj" />
+    <ProjectReference Include="..\SteamTracker.\SteamTracker..csproj" />
     <ProjectReference Include="..\SteamTracker.Services\SteamTracker.Services.csproj" />
   </ItemGroup>
 

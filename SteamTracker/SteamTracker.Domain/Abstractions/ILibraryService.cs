@@ -1,6 +1,6 @@
-﻿using SteamTracker.Services.Models;
+﻿using SteamTracker.Domain.Models;
 
-namespace SteamTracker.Services.Abstractions;
+namespace SteamTracker.Domain.Abstractions;
 
 public interface ILibraryService
 {
