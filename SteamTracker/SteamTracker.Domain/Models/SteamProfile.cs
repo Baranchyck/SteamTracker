@@ -1,4 +1,4 @@
-namespase ﻿SteamTracker.Domain.Models;
+namespace ﻿SteamTracker.Domain.Models;
 
 public record SteamProfile(
     string SteamId,
