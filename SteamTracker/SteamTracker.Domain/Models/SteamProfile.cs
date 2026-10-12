@@ -1,4 +1,4 @@
-﻿using SteamTracker.Domain.Models;
+﻿SteamTracker.Domain.Models;
 
 public record SteamProfile(
     string SteamId,
