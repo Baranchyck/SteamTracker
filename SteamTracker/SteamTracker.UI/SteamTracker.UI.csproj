@@ -6,6 +6,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
+    <UserSecretsId>29a630b3-c9a9-4a2a-b999-5abadbb953d1</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
@@ -13,6 +14,16 @@
     <ProjectReference Include="..\SteamTracker.Domain\SteamTracker.Domain.csproj" />
     <ProjectReference Include="..\SteamTracker.Integrations\SteamTracker.Integrations.csproj" />
     <ProjectReference Include="..\SteamTracker.Services\SteamTracker.Services.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="8.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="8.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Локальний appsettings.json (у .gitignore) кладемо поруч із .exe -->
+    <None Update="appsettings.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

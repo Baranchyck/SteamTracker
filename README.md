@@ -23,6 +23,30 @@
 
 ---
 
+## 🔑 Steam API key
+
+Застосунку потрібен Steam Web API key. Отримати його можна тут: https://steamcommunity.com/dev/apikey (потрібен акаунт Steam і будь-який домен, напр. `localhost`).
+
+**Ключ ніколи не комітимо.** Без ключа застосунок при старті покаже помилку «Задай Steam:ApiKey».
+
+### Для розробки (user-secrets)
+
+З папки `SteamTracker/`:
+
+```bash
+dotnet user-secrets set "Steam:ApiKey" "<твій ключ>" --project SteamTracker.UI
+```
+
+Секрет зберігається поза репозиторієм, у `%APPDATA%\Microsoft\UserSecrets\`.
+
+### Для зібраного `.exe` (appsettings.json)
+
+User-secrets працюють лише на машині розробника. Для `.exe` скопіюй `SteamTracker.UI/appsettings.example.json` в `appsettings.json` поруч із `.exe` (або в `SteamTracker.UI/` перед збіркою) і впиши свій ключ. `appsettings.json` є в `.gitignore`.
+
+Якщо ключ задано в обох місцях, user-secrets мають пріоритет.
+
+---
+
 ## 🏛 System Architecture & Solution Structure
 
 The project follows a modular, layered architecture inspired by Clean/Onion principles, ensuring strict separation of concerns, testability, and maintainability.
