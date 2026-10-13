@@ -9,5 +9,7 @@
   <ItemGroup>
     <ProjectReference Include="..\SteamTracker.Domain\SteamTracker.Domain.csproj" />
   </ItemGroup>
-
+  <ItemGroup>
+	<InternalsVisibleTo Include="SteamTracker.Tests" />
+  </ItemGroup>
 </Project>

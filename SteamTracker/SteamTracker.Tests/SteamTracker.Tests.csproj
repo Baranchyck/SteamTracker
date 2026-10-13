@@ -18,11 +18,11 @@
 
   <ItemGroup>
     <ProjectReference Include="..\SteamTracker.Domain\SteamTracker.Domain.csproj" />
+    <ProjectReference Include="..\SteamTracker.Integrations\SteamTracker.Integrations.csproj" />
     <ProjectReference Include="..\SteamTracker.Services\SteamTracker.Services.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <Using Include="Xunit" />
   </ItemGroup>
-
 </Project>
