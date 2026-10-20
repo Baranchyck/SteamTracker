@@ -1,4 +1,6 @@
 # SteamTracker
+[![CI](https://github.com/Baranchyck/SteamTracker/actions/workflows/ci.yml/badge.svg)](https://github.com/Baranchyck/SteamTracker/actions/workflows/ci.yml)
+
 .NET desktop app for Steam library analytics — achievements, friends comparison, co-op matchmaker, price-per-hour.
 
 ---
