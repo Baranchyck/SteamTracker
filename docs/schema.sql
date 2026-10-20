@@ -68,3 +68,18 @@ CREATE TABLE IF NOT EXISTS Friendship (
     FOREIGN KEY (FriendId) REFERENCES Player (SteamId64) ON DELETE CASCADE,
     CHECK (FriendId != OwnerId)
 );
+
+-- Поточний користувач застосунку + локальний кеш його профілю (авто-логін, офлайн).
+CREATE TABLE IF NOT EXISTS Users (
+    SteamId      TEXT    PRIMARY KEY,
+    PersonaName  TEXT    NOT NULL,
+    AvatarUrl    TEXT    NOT NULL,
+    Visibility   INTEGER NOT NULL,          -- ProfileVisibility (enum) як int
+    UpdatedAt    TEXT    NOT NULL           -- ISO-8601 UTC
+);
+
+-- Налаштування застосунку key-value (напр. Settings["CurrentSteamId"]).
+CREATE TABLE IF NOT EXISTS Settings (
+    Key    TEXT PRIMARY KEY,
+    Value  TEXT NOT NULL
+);
