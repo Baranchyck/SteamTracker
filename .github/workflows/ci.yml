@@ -1,0 +1,29 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    # WPF (net8.0-windows) не збирається на Linux
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x # TargetFramework у csproj: net8.0 / net8.0-windows
+
+      - name: Restore
+        run: dotnet restore SteamTracker/SteamTracker.sln
+
+      - name: Build
+        run: dotnet build SteamTracker/SteamTracker.sln --no-restore -c Release
+
+      # Тести не потребують справжнього Steam API ключа (його в CI немає)
+      - name: Test
+        run: dotnet test SteamTracker/SteamTracker.sln --no-build -c Release --verbosity normal
