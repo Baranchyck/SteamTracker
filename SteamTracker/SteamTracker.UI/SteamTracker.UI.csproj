@@ -24,6 +24,8 @@
   <ItemGroup>
     <!-- Локальний appsettings.json (у .gitignore) кладемо поруч із .exe -->
     <None Update="appsettings.json" CopyToOutputDirectory="PreserveNewest" />
+    <!-- Тестові дані для фейкових сервісів -->
+    <None Update="Fakes\Data\*.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>
