@@ -1,3 +1,8 @@
+﻿using System.Net.Http;
+using System.Windows;
+using SteamTracker.DataAccess;
+using SteamTracker.Domain.Abstractions;
+using SteamTracker.Integrations.SteamApi;
 ﻿using System.Windows;
 using Microsoft.Extensions.Configuration;
 using SteamTracker.DataAccess;
@@ -8,6 +13,9 @@ namespace SteamTracker.UI
 {
     public partial class App : Application
     {
+        private HttpClient? _httpClient;
+
+        public ISteamApiClient SteamApi { get; private set; } = null!;
         // TODO: перенести в DI-контейнер, коли він з'явиться
         internal SteamOptions SteamOptions { get; private set; } = null!;
 
@@ -32,6 +40,14 @@ namespace SteamTracker.UI
                 return;
             }
 
+            _httpClient = new HttpClient();
+            SteamApi = new SteamApiClient(_httpClient);
+        }
+
+        protected override void OnExit(ExitEventArgs e)
+        {
+            _httpClient?.Dispose();
+            base.OnExit(e);
             try
             {
                 SteamOptions = SteamOptions.Load(BuildConfiguration());
