@@ -8,6 +8,7 @@ using SteamTracker.Integrations.SteamApi;
 using SteamTracker.Services.Auth;
 using SteamTracker.Services.Configuration;
 using SteamTracker.UI.Fakes;
+using SteamTracker.UI.Windows;
 
 namespace SteamTracker.UI;
 
@@ -92,7 +93,9 @@ public static class ServiceCollectionExtensions
 
     private static IServiceCollection AddWindows(this IServiceCollection services)
     {
-        services.AddSingleton<MainWindow>();
+        // Transient: після виходу й повторного входу потрібен новий екземпляр, закрите вікно WPF повторно не показати
+        services.AddTransient<LoginWindow>();
+        services.AddTransient<MainWindow>();
         // Нові вікна/екрани: services.AddTransient<SomeWindow>();
         return services;
     }

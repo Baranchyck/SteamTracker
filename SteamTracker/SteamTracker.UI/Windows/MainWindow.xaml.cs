@@ -2,7 +2,7 @@ using System.Windows;
 using System.Windows.Controls;
 using SteamTracker.UI.Views;
 
-namespace SteamTracker.UI
+namespace SteamTracker.UI.Windows
 {
     /// <summary>
     /// Головне вікно: бічне меню навігації та область для екранів модулів.
