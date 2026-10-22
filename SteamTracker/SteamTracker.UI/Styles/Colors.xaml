@@ -9,6 +9,7 @@
 
     <SolidColorBrush x:Key="Accent" Color="#4C9FE6" />
     <SolidColorBrush x:Key="Success" Color="#87BA6F" />
+    <SolidColorBrush x:Key="Danger" Color="#E5534B" />
 
     <SolidColorBrush x:Key="NavHover" Color="#18222E" />
     <SolidColorBrush x:Key="NavActive" Color="#1B3653" />
