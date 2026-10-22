@@ -32,16 +32,22 @@
                     <TextBlock Text="Steam Tracker" Style="{StaticResource Heading}" VerticalAlignment="Center" Margin="10,0,0,0" />
                 </StackPanel>
 
-                <!-- Картка користувача внизу меню -->
+                <!-- Картка користувача внизу меню: аватар, нік, видимість профілю, вихід -->
                 <Border DockPanel.Dock="Bottom" Style="{StaticResource Card}" Margin="12" Padding="10">
                     <DockPanel>
-                        <Button DockPanel.Dock="Right" Content="Вийти" Style="{StaticResource SecondaryButton}" VerticalAlignment="Center" />
-                        <Border Width="30" Height="30" CornerRadius="15" Background="{StaticResource Accent}">
-                            <TextBlock Text="?" FontSize="11" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                        </Border>
+                        <Button x:Name="LogoutButton" DockPanel.Dock="Right" Content="Вийти" Style="{StaticResource SecondaryButton}" VerticalAlignment="Center" />
+
+                        <!-- Аватар: коло з першою літерою ніка, поверх нього картинка, якщо вона завантажилась -->
+                        <Grid Width="30" Height="30">
+                            <Border CornerRadius="15" Background="{StaticResource Accent}">
+                                <TextBlock x:Name="AvatarInitial" Text="?" FontSize="11" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Border>
+                            <Ellipse x:Name="AvatarImage" Visibility="Collapsed" />
+                        </Grid>
+
                         <StackPanel Margin="10,0,0,0" VerticalAlignment="Center">
-                            <TextBlock Text="Гравець" />
-                            <TextBlock Text="Онлайн" Style="{StaticResource Small}" Foreground="{StaticResource Success}" />
+                            <TextBlock x:Name="UserNameText" TextTrimming="CharacterEllipsis" />
+                            <TextBlock x:Name="VisibilityText" Style="{StaticResource Small}" />
                         </StackPanel>
                     </DockPanel>
                 </Border>
