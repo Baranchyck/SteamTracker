@@ -1,76 +1,58 @@
-﻿using System.Net.Http;
 using System.Windows;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using SteamTracker.DataAccess;
 using SteamTracker.Domain.Abstractions;
 using SteamTracker.Domain.Exceptions;
-using SteamTracker.Integrations.Auth;
-using SteamTracker.Integrations.SteamApi;
-using SteamTracker.Services.Auth;
-using SteamTracker.Services.Configuration;
-using SteamTracker.UI.Fakes;
 using SteamTracker.UI.Windows;
 
 namespace SteamTracker.UI
 {
     public partial class App : Application
     {
-        private HttpClient? _httpClient;
+        private ServiceProvider? _provider;
 
-        // TODO: перенести в DI-контейнер (#49)
-        public ISteamApiClient SteamApi { get; private set; } = null!;
-        public IAuthService Auth { get; private set; } = null!;
-        internal SteamOptions SteamOptions { get; private set; } = null!;
+        public IServiceProvider Services => _provider
+            ?? throw new InvalidOperationException("Контейнер ще не ініціалізовано.");
+
+        private IAuthService Auth => Services.GetRequiredService<IAuthService>();
 
         protected override async void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
 
-            var configuration = BuildConfiguration();
-            // UseFakes=true — фейкові сервіси без Steam і без мережі (див. Fakes/)
-            var useFakes = configuration.GetValue<bool>("UseFakes");
-
-            IDbConnectionFactory factory;
             try
             {
-                factory = new SqliteConnectionFactory(SqliteConnectionFactory.GetDefaultPath());
-                new DatabaseInitializer(factory).Initialize();
+                _provider = new ServiceCollection()
+                    .AddSteamTracker(BuildConfiguration())
+                    .BuildServiceProvider(new ServiceProviderOptions
+                    {
+                        // Невирішена залежність падає тут, а не при першому кліку в UI.
+                        ValidateOnBuild = true,
+                        ValidateScopes = true
+                    });
+            }
+            catch (ConfigurationMissingException ex)
+            {
+                Fail(ex.Message);
+                return;
             }
             catch (Exception ex)
             {
                 // TODO: залогувати ex (коли з'явиться логер)
-                ShowStartupError("Не вдалося ініціалізувати базу даних.\n" + ex.Message);
+                Fail("Не вдалося зібрати контейнер залежностей.\n" + ex.Message);
                 return;
             }
 
-            _httpClient = new HttpClient();
-            SteamApi = new SteamApiClient(_httpClient);
-
-            if (useFakes)
+            try
             {
-                Auth = new FakeAuthService
-                {
-                    HasSavedSession = configuration.GetValue<bool>("Fakes:HasSavedSession"),
-                    SimulateFailure = configuration.GetValue<bool>("Fakes:SimulateFailure")
-                };
+                _provider.GetRequiredService<DatabaseInitializer>().Initialize();
             }
-            else
+            catch (Exception ex)
             {
-                try
-                {
-                    SteamOptions = SteamOptions.Load(configuration);
-                }
-                catch (ConfigurationMissingException ex)
-                {
-                    ShowStartupError(ex.Message);
-                    return;
-                }
-
-                Auth = new AuthService(
-                    new SteamOpenIdAuthenticator(_httpClient),
-                    SteamApi,
-                    new SqliteUserRepository(factory),
-                    new SqliteSettingsRepository(factory));
+                // TODO: залогувати ex
+                Fail("Не вдалося ініціалізувати базу даних.\n" + ex.Message);
+                return;
             }
 
             Auth.CurrentUserChanged += Auth_CurrentUserChanged;
@@ -89,13 +71,13 @@ namespace SteamTracker.UI
 
         protected override void OnExit(ExitEventArgs e)
         {
-            _httpClient?.Dispose();
+            _provider?.Dispose(); // закриває і singleton-и, і HttpClient
             base.OnExit(e);
         }
 
         private void ShowLoginWindow()
         {
-            var login = new LoginWindow(Auth);
+            var login = Services.GetRequiredService<LoginWindow>();
             login.LoggedIn += (_, _) =>
             {
                 // Спершу відкриваємо головне вікно, потім закриваємо вікно входу,
@@ -108,7 +90,7 @@ namespace SteamTracker.UI
 
         private void ShowMainWindow()
         {
-            MainWindow = new MainWindow();
+            MainWindow = Services.GetRequiredService<SteamTracker.UI.Windows.MainWindow>();
             MainWindow.Show();
         }
 
@@ -126,7 +108,7 @@ namespace SteamTracker.UI
             });
         }
 
-        private void ShowStartupError(string message)
+        private void Fail(string message)
         {
             MessageBox.Show(message, "SteamTracker", MessageBoxButton.OK, MessageBoxImage.Error);
             Shutdown(1);
