@@ -35,7 +35,7 @@
                 <!-- Картка користувача внизу меню: аватар, нік, видимість профілю, вихід -->
                 <Border DockPanel.Dock="Bottom" Style="{StaticResource Card}" Margin="12" Padding="10">
                     <DockPanel>
-                        <Button x:Name="LogoutButton" DockPanel.Dock="Right" Content="Вийти" Style="{StaticResource SecondaryButton}" VerticalAlignment="Center" />
+                        <Button x:Name="LogoutButton" DockPanel.Dock="Right" Content="Вийти" Style="{StaticResource SecondaryButton}" VerticalAlignment="Center" Click="LogoutButton_Click" />
 
                         <!-- Аватар: коло з першою літерою ніка, поверх нього картинка, якщо вона завантажилась -->
                         <Grid Width="30" Height="30">

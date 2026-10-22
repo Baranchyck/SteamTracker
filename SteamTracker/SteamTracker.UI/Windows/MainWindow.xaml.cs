@@ -76,6 +76,13 @@ namespace SteamTracker.UI.Windows
             AvatarImage.Visibility = Visibility.Visible;
         }
 
+        private async void LogoutButton_Click(object sender, RoutedEventArgs e)
+        {
+            LogoutButton.IsEnabled = false;
+            // Після виходу App отримає CurrentUserChanged і поверне на екран входу
+            await _auth.LogoutAsync();
+        }
+
         // Спільний обробник для всіх пунктів меню: Tag пункту визначає, який екран показати
         private void NavItem_Checked(object sender, RoutedEventArgs e)
         {
