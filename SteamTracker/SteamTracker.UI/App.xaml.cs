@@ -1,12 +1,10 @@
 ﻿using System.Net.Http;
 using System.Windows;
-using SteamTracker.DataAccess;
-using SteamTracker.Domain.Abstractions;
-using SteamTracker.Integrations.SteamApi;
-﻿using System.Windows;
 using Microsoft.Extensions.Configuration;
 using SteamTracker.DataAccess;
+using SteamTracker.Domain.Abstractions;
 using SteamTracker.Domain.Exceptions;
+using SteamTracker.Integrations.SteamApi;
 using SteamTracker.Services.Configuration;
 
 namespace SteamTracker.UI
@@ -40,14 +38,6 @@ namespace SteamTracker.UI
                 return;
             }
 
-            _httpClient = new HttpClient();
-            SteamApi = new SteamApiClient(_httpClient);
-        }
-
-        protected override void OnExit(ExitEventArgs e)
-        {
-            _httpClient?.Dispose();
-            base.OnExit(e);
             try
             {
                 SteamOptions = SteamOptions.Load(BuildConfiguration());
@@ -62,6 +52,15 @@ namespace SteamTracker.UI
                 Shutdown(1);
                 return;
             }
+
+            _httpClient = new HttpClient();
+            SteamApi = new SteamApiClient(_httpClient, SteamOptions.ApiKey);
+        }
+
+        protected override void OnExit(ExitEventArgs e)
+        {
+            _httpClient?.Dispose();
+            base.OnExit(e);
         }
 
         // user-secrets додаються останніми, тож на машині розробника перекривають appsettings.json.
