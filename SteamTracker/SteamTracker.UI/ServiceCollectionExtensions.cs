@@ -7,6 +7,7 @@ using SteamTracker.Integrations.Auth;
 using SteamTracker.Integrations.SteamApi;
 using SteamTracker.Services.Auth;
 using SteamTracker.Services.Configuration;
+using SteamTracker.Services.Library;
 using SteamTracker.UI.Fakes;
 using SteamTracker.UI.Windows;
 
@@ -53,7 +54,8 @@ public static class ServiceCollectionExtensions
         // Load() валідує ключ і кидає ConfigurationMissingException ще на етапі реєстрації (fail-fast).
         services.AddSingleton(SteamOptions.Load(configuration));
 
-        services.AddHttpClient<ISteamApiClient, SteamApiClient>()
+        services.AddHttpClient<ISteamApiClient, SteamApiClient>((http, sp) =>
+                new SteamApiClient(http, sp.GetRequiredService<SteamOptions>().ApiKey))
             // Typed client тримається singleton-сервісами всю роботу застосунку,
             // тож змушуємо пул з'єднань оновлюватись (DNS).
             .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
@@ -86,8 +88,13 @@ public static class ServiceCollectionExtensions
 
     private static IServiceCollection AddLibraryFeature(this IServiceCollection services, bool useFakes)
     {
-        // TODO: замінити на LibraryService у відповідному PR
-        services.AddSingleton<ILibraryService, FakeLibraryService>();
+        if (useFakes)
+        {
+            services.AddSingleton<ILibraryService, FakeLibraryService>();
+            return services;
+        }
+
+        services.AddSingleton<ILibraryService, LibraryService>();
         return services;
     }
 
