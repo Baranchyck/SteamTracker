@@ -1,23 +1,17 @@
-﻿using System.Net.Http;
 using System.Windows;
-using SteamTracker.DataAccess;
-using SteamTracker.Domain.Abstractions;
-using SteamTracker.Integrations.SteamApi;
-﻿using System.Windows;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using SteamTracker.DataAccess;
 using SteamTracker.Domain.Exceptions;
-using SteamTracker.Services.Configuration;
 
 namespace SteamTracker.UI
 {
     public partial class App : Application
     {
-        private HttpClient? _httpClient;
+        private ServiceProvider? _provider;
 
-        public ISteamApiClient SteamApi { get; private set; } = null!;
-        // TODO: перенести в DI-контейнер, коли він з'явиться
-        internal SteamOptions SteamOptions { get; private set; } = null!;
+        public IServiceProvider Services => _provider
+            ?? throw new InvalidOperationException("Контейнер ще не ініціалізовано.");
 
         protected override void OnStartup(StartupEventArgs e)
         {
@@ -25,43 +19,51 @@ namespace SteamTracker.UI
 
             try
             {
-                var factory = new SqliteConnectionFactory(SqliteConnectionFactory.GetDefaultPath());
-                new DatabaseInitializer(factory).Initialize();
+                _provider = new ServiceCollection()
+                    .AddSteamTracker(BuildConfiguration())
+                    .BuildServiceProvider(new ServiceProviderOptions
+                    {
+                        // Невирішена залежність падає тут, а не при першому кліку в UI.
+                        ValidateOnBuild = true,
+                        ValidateScopes = true
+                    });
+            }
+            catch (ConfigurationMissingException ex)
+            {
+                Fail(ex.Message);
+                return;
             }
             catch (Exception ex)
             {
                 // TODO: залогувати ex (коли з'явиться логер)
-                MessageBox.Show(
-                    "Не вдалося ініціалізувати базу даних.\n" + ex.Message,
-                    "SteamTracker",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Error);
-                Shutdown(1);
+                Fail("Не вдалося зібрати контейнер залежностей.\n" + ex.Message);
                 return;
             }
 
-            _httpClient = new HttpClient();
-            SteamApi = new SteamApiClient(_httpClient);
+            try
+            {
+                _provider.GetRequiredService<DatabaseInitializer>().Initialize();
+            }
+            catch (Exception ex)
+            {
+                // TODO: залогувати ex
+                Fail("Не вдалося ініціалізувати базу даних.\n" + ex.Message);
+                return;
+            }
+
+            _provider.GetRequiredService<MainWindow>().Show();
         }
 
         protected override void OnExit(ExitEventArgs e)
         {
-            _httpClient?.Dispose();
+            _provider?.Dispose(); // закриває і singleton-и, і HttpClient
             base.OnExit(e);
-            try
-            {
-                SteamOptions = SteamOptions.Load(BuildConfiguration());
-            }
-            catch (ConfigurationMissingException ex)
-            {
-                MessageBox.Show(
-                    ex.Message,
-                    "SteamTracker",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Error);
-                Shutdown(1);
-                return;
-            }
+        }
+
+        private void Fail(string message)
+        {
+            MessageBox.Show(message, "SteamTracker", MessageBoxButton.OK, MessageBoxImage.Error);
+            Shutdown(1);
         }
 
         // user-secrets додаються останніми, тож на машині розробника перекривають appsettings.json.
