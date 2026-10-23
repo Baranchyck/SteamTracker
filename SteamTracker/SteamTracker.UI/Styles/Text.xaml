@@ -21,4 +21,21 @@
         <Setter Property="FontSize" Value="11" />
     </Style>
 
+    <!-- Картки статистики: підпис, велике число, пояснення -->
+    <Style x:Key="StatLabel" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="FontWeight" Value="Medium" />
+        <Setter Property="Foreground" Value="{StaticResource TextSecondary}" />
+    </Style>
+
+    <Style x:Key="StatValue" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="28" />
+        <Setter Property="FontWeight" Value="Bold" />
+        <Setter Property="Margin" Value="0,6" />
+    </Style>
+
+    <Style x:Key="StatCaption" TargetType="TextBlock" BasedOn="{StaticResource Muted}">
+        <Setter Property="FontSize" Value="13" />
+    </Style>
+
 </ResourceDictionary>
