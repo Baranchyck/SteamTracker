@@ -13,6 +13,9 @@ namespace SteamTracker.UI.Fakes
         /// <summary>Який результат повертати: ігри, приватний профіль або помилку.</summary>
         public DataStatus Status { get; set; } = DataStatus.Available;
 
+        /// <summary>true — при Status = Available повертає порожню бібліотеку (стан «Порожньо»).</summary>
+        public bool ReturnEmpty { get; set; }
+
         public async Task<ServiceResult<IReadOnlyList<OwnedGame>>> GetMyLibraryAsync(LibraryFilter filter, CancellationToken ct = default)
         {
             // Пауза, щоб на екрані було видно стан «Завантаження»
@@ -26,6 +29,11 @@ namespace SteamTracker.UI.Fakes
                 case DataStatus.Error:
                     return new ServiceResult<IReadOnlyList<OwnedGame>>(Array.Empty<OwnedGame>(), DataStatus.Error,
                         "Не вдалося завантажити бібліотеку.");
+            }
+
+            if (ReturnEmpty)
+            {
+                return new ServiceResult<IReadOnlyList<OwnedGame>>(Array.Empty<OwnedGame>(), DataStatus.Available);
             }
 
             var games = await FakeData.LoadAsync<List<OwnedGame>>("games.json", ct).ConfigureAwait(false);

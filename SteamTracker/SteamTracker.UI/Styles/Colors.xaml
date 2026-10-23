@@ -16,5 +16,14 @@
 
     <SolidColorBrush x:Key="TextPrimary" Color="#E6EDF3" />
     <SolidColorBrush x:Key="TextSecondary" Color="#8B98A8" />
+    <!-- Текст на кнопках кольору Accent -->
+    <SolidColorBrush x:Key="TextOnAccent" Color="#0B1219" />
+
+    <!-- Заглушки обкладинок, фон смужок, скелетони, нейтральні кнопки й бейджі -->
+    <SolidColorBrush x:Key="SurfaceRaised" Color="#223041" />
+
+    <SolidColorBrush x:Key="DangerSoft" Color="#3C1D1D" />
+    <SolidColorBrush x:Key="Warning" Color="#E6B84A" />
+    <SolidColorBrush x:Key="WarningSoft" Color="#3A3017" />
 
 </ResourceDictionary>

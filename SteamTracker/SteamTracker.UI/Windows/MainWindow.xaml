@@ -59,7 +59,7 @@
                     <RadioButton Style="{StaticResource NavItem}" GroupName="Nav" Content="Час гри з друзями" Tag="Comparison" />
                     <RadioButton Style="{StaticResource NavItem}" GroupName="Nav" Content="Друзі-радар" Tag="FriendsRadar" />
                     <RadioButton Style="{StaticResource NavItem}" GroupName="Nav" Content="Co-op Matchmaker" Tag="Matchmaker" />
-                    <RadioButton Style="{StaticResource NavItem}" GroupName="Nav" Content="Бібліотека" Tag="PricePerHour" />
+                    <RadioButton Style="{StaticResource NavItem}" GroupName="Nav" Content="Бібліотека" Tag="Library" />
                 </StackPanel>
 
             </DockPanel>

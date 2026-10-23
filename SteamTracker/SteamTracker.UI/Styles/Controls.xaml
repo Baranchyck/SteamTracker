@@ -100,4 +100,249 @@
         </Setter>
     </Style>
 
+
+    <!-- Велика картка екрана (статистика, списки) — за макетом радіус 12 і відступ 20 -->
+    <Style x:Key="SectionCard" TargetType="Border" BasedOn="{StaticResource Card}">
+        <Setter Property="CornerRadius" Value="12" />
+        <Setter Property="Padding" Value="20" />
+    </Style>
+
+    <!-- Невеликий бейдж: лічильник біля заголовка, «Не запускалась» -->
+    <Style x:Key="Badge" TargetType="Border">
+        <Setter Property="Background" Value="{StaticResource SurfaceRaised}" />
+        <Setter Property="CornerRadius" Value="6" />
+        <Setter Property="Padding" Value="8,3" />
+    </Style>
+
+    <!-- Кнопка дії в картці стану (StateView): «Повторити», «Перевірити знову». Компактніша за PrimaryButton -->
+    <Style x:Key="StateButton" TargetType="Button">
+        <Setter Property="Foreground" Value="{StaticResource TextOnAccent}" />
+        <Setter Property="Background" Value="{StaticResource Accent}" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Root" Background="{TemplateBinding Background}" CornerRadius="8" Padding="12,7">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <!-- :hover -->
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Root" Property="Opacity" Value="0.85" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Нейтральна дія в картці стану: «Оновити» -->
+    <Style x:Key="StateSubtleButton" TargetType="Button" BasedOn="{StaticResource StateButton}">
+        <Setter Property="Foreground" Value="{StaticResource TextPrimary}" />
+        <Setter Property="Background" Value="{StaticResource SurfaceRaised}" />
+    </Style>
+
+    <!-- Чекбокс-фільтр. Квадрат малюємо самі, бо стандартний — світлий -->
+    <Style x:Key="FilterCheckBox" TargetType="CheckBox">
+        <Setter Property="Foreground" Value="{StaticResource TextPrimary}" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="CheckBox">
+                    <StackPanel Orientation="Horizontal" Background="Transparent">
+                        <Border x:Name="Box" Width="16" Height="16" CornerRadius="4"
+                                Background="{StaticResource Surface}" BorderBrush="{StaticResource Border}" BorderThickness="1">
+                            <Path x:Name="Check" Data="M3,7.5 L6,10.5 L11.5,4.5" Stroke="{StaticResource TextOnAccent}"
+                                  StrokeThickness="2" Visibility="Collapsed" />
+                        </Border>
+                        <ContentPresenter Margin="8,0,0,0" VerticalAlignment="Center" />
+                    </StackPanel>
+                    <ControlTemplate.Triggers>
+                        <!-- :hover -->
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Box" Property="BorderBrush" Value="{StaticResource Accent}" />
+                        </Trigger>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="Box" Property="Background" Value="{StaticResource Accent}" />
+                            <Setter TargetName="Box" Property="BorderBrush" Value="{StaticResource Accent}" />
+                            <Setter TargetName="Check" Property="Visibility" Value="Visible" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Пункт випадного списку сортування -->
+    <Style x:Key="SortComboBoxItem" TargetType="ComboBoxItem">
+        <Setter Property="Foreground" Value="{StaticResource TextPrimary}" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ComboBoxItem">
+                    <Border x:Name="Root" Background="Transparent" CornerRadius="6" Padding="10,6">
+                        <ContentPresenter />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsHighlighted" Value="True">
+                            <Setter TargetName="Root" Property="Background" Value="{StaticResource NavHover}" />
+                        </Trigger>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="Root" Property="Background" Value="{StaticResource NavActive}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Сортування у вигляді тексту зі стрілкою («За часом, спадання ▾»), як у макеті -->
+    <Style x:Key="SortComboBox" TargetType="ComboBox">
+        <Setter Property="Foreground" Value="{StaticResource TextSecondary}" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="ItemContainerStyle" Value="{StaticResource SortComboBoxItem}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ComboBox">
+                    <Grid>
+                        <!-- Невидима кнопка на всю площу відкриває список -->
+                        <ToggleButton Focusable="False" ClickMode="Press"
+                                      IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}">
+                            <ToggleButton.Template>
+                                <ControlTemplate TargetType="ToggleButton">
+                                    <Border Background="Transparent" />
+                                </ControlTemplate>
+                            </ToggleButton.Template>
+                        </ToggleButton>
+                        <StackPanel Orientation="Horizontal" IsHitTestVisible="False">
+                            <ContentPresenter Content="{TemplateBinding SelectionBoxItem}" VerticalAlignment="Center" />
+                            <!-- Стрілка з макета (Chevron), повернута донизу -->
+                            <Path Data="M4.33013 0L8.66025 5.25H0L4.33013 0Z" Fill="{TemplateBinding Foreground}"
+                                  Margin="8,0,0,0" VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5">
+                                <Path.RenderTransform>
+                                    <RotateTransform Angle="180" />
+                                </Path.RenderTransform>
+                            </Path>
+                        </StackPanel>
+                        <Popup IsOpen="{TemplateBinding IsDropDownOpen}" AllowsTransparency="True" Focusable="False"
+                               Placement="Bottom" PopupAnimation="Fade">
+                            <Border Background="{StaticResource Surface}" BorderBrush="{StaticResource Border}"
+                                    BorderThickness="1" CornerRadius="8" Padding="4" Margin="0,6,0,0">
+                                <ItemsPresenter KeyboardNavigation.DirectionalNavigation="Contained" />
+                            </Border>
+                        </Popup>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <!-- :hover -->
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter Property="Foreground" Value="{StaticResource TextPrimary}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Рядок списку ігор: без системного виділення, лише підсвітка при наведенні -->
+    <Style x:Key="ListRow" TargetType="ListBoxItem">
+        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ListBoxItem">
+                    <Border x:Name="Root" Background="Transparent" CornerRadius="6" Padding="8">
+                        <ContentPresenter />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Root" Property="Background" Value="{StaticResource NavHover}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Тонка темна смуга прокрутки замість системної світлої -->
+    <Style x:Key="ThinScrollBar" TargetType="ScrollBar">
+        <Setter Property="Width" Value="6" />
+        <Setter Property="MinWidth" Value="6" />
+        <Setter Property="Margin" Value="4,0,0,0" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ScrollBar">
+                    <Track x:Name="PART_Track" IsDirectionReversed="True">
+                        <Track.Thumb>
+                            <Thumb>
+                                <Thumb.Template>
+                                    <ControlTemplate TargetType="Thumb">
+                                        <Border x:Name="Bar" Background="{StaticResource TextSecondary}" Opacity="0.35" CornerRadius="3" />
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="Bar" Property="Opacity" Value="0.7" />
+                                            </Trigger>
+                                            <Trigger Property="IsDragging" Value="True">
+                                                <Setter TargetName="Bar" Property="Opacity" Value="0.7" />
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Thumb.Template>
+                            </Thumb>
+                        </Track.Thumb>
+                    </Track>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Список ігор. Віртуалізація: створюються лише видимі рядки, тож сотні ігор не гальмують -->
+    <Style x:Key="GameList" TargetType="ListBox">
+        <Style.Resources>
+            <Style TargetType="ScrollBar" BasedOn="{StaticResource ThinScrollBar}" />
+        </Style.Resources>
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="Foreground" Value="{StaticResource TextPrimary}" />
+        <Setter Property="ItemContainerStyle" Value="{StaticResource ListRow}" />
+        <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled" />
+        <Setter Property="VirtualizingPanel.IsVirtualizing" Value="True" />
+        <Setter Property="VirtualizingPanel.VirtualizationMode" Value="Recycling" />
+        <Setter Property="VirtualizingPanel.ScrollUnit" Value="Pixel" />
+    </Style>
+
+    <!-- Сегментований перемикач: рамка-група + RadioButton-сегменти -->
+    <Style x:Key="SegmentGroup" TargetType="Border">
+        <Setter Property="Background" Value="{StaticResource Surface}" />
+        <Setter Property="BorderBrush" Value="{StaticResource Border}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="Padding" Value="3" />
+    </Style>
+
+    <Style x:Key="SegmentItem" TargetType="RadioButton">
+        <Setter Property="Foreground" Value="{StaticResource TextSecondary}" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="RadioButton">
+                    <Border x:Name="Root" Background="Transparent" CornerRadius="6" Padding="10,5">
+                        <ContentPresenter VerticalAlignment="Center" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter Property="Foreground" Value="{StaticResource TextPrimary}" />
+                        </Trigger>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="Root" Property="Background" Value="{StaticResource NavActive}" />
+                            <Setter Property="Foreground" Value="{StaticResource TextPrimary}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
 </ResourceDictionary>

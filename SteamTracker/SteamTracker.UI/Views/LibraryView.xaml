@@ -1,0 +1,214 @@
+<!-- Екран «Бібліотека» за макетом Figma «07 · Використання бібліотеки» + вимоги issue #52 -->
+<UserControl x:Class="SteamTracker.UI.Views.LibraryView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:SteamTracker.UI.Controls"
+             xmlns:converters="clr-namespace:SteamTracker.UI.Converters"
+             xmlns:library="clr-namespace:SteamTracker.UI.Views.Library"
+             xmlns:models="clr-namespace:SteamTracker.Domain.Models;assembly=SteamTracker.Domain">
+
+    <UserControl.Resources>
+        <converters:IconUrlConverter x:Key="IconUrl" />
+        <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
+
+        <!-- Обкладинка гри: сіра заглушка, поверх неї — іконка, коли завантажиться -->
+        <DataTemplate x:Key="Cover">
+            <Border Width="48" Height="24" CornerRadius="4" Background="{StaticResource SurfaceRaised}">
+                <Border CornerRadius="4">
+                    <Border.Background>
+                        <ImageBrush ImageSource="{Binding Converter={StaticResource IconUrl}}" Stretch="UniformToFill" />
+                    </Border.Background>
+                </Border>
+            </Border>
+        </DataTemplate>
+    </UserControl.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0" Margin="0,0,0,20">
+            <TextBlock Text="Використання бібліотеки" Style="{StaticResource Title}" />
+            <TextBlock Text="Скільки часу ти провів у кожній грі" Style="{StaticResource Muted}" Margin="0,4,0,0" />
+        </StackPanel>
+
+        <!-- Вміст екрана; ховається, коли показується картка стану -->
+        <Grid Grid.Row="1" x:Name="ContentPanel" Visibility="Collapsed">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <!-- Картки статистики -->
+            <Grid Grid.Row="0" Margin="0,0,0,20">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="16" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="16" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <Border Grid.Column="0" Style="{StaticResource SectionCard}">
+                    <StackPanel>
+                        <TextBlock Text="Ігор у бібліотеці" Style="{StaticResource StatLabel}" />
+                        <TextBlock x:Name="GamesCountText" Style="{StaticResource StatValue}" />
+                        <TextBlock Text="усі ігри акаунту" Style="{StaticResource StatCaption}" />
+                    </StackPanel>
+                </Border>
+
+                <Border Grid.Column="2" Style="{StaticResource SectionCard}">
+                    <StackPanel>
+                        <TextBlock Text="Загальний час" Style="{StaticResource StatLabel}" />
+                        <TextBlock x:Name="TotalHoursText" Style="{StaticResource StatValue}" Foreground="{StaticResource Accent}" />
+                        <TextBlock Text="за весь час у Steam" Style="{StaticResource StatCaption}" />
+                    </StackPanel>
+                </Border>
+
+                <Border Grid.Column="4" Style="{StaticResource SectionCard}">
+                    <StackPanel>
+                        <TextBlock Text="Майже не грав" Style="{StaticResource StatLabel}" />
+                        <TextBlock x:Name="BarelyCountText" Style="{StaticResource StatValue}" Foreground="{StaticResource Warning}" />
+                        <TextBlock Text="ігор із часом менше 1 години" Style="{StaticResource StatCaption}" />
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <Grid Grid.Row="1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="16" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <!-- Усі ігри: сортування, фільтр, віртуалізований список -->
+                <Border Grid.Column="0" Style="{StaticResource SectionCard}">
+                    <DockPanel>
+                        <DockPanel DockPanel.Dock="Top">
+                            <ComboBox x:Name="SortBox" DockPanel.Dock="Right" Style="{StaticResource SortComboBox}"
+                                      VerticalAlignment="Top" Margin="0,2,0,0" SelectionChanged="Sort_Changed">
+                                <ComboBoxItem Content="За часом, спадання" Tag="{x:Static models:LibrarySort.PlaytimeDesc}" IsSelected="True" />
+                                <ComboBoxItem Content="За назвою" Tag="{x:Static models:LibrarySort.NameAsc}" />
+                                <ComboBoxItem Content="Найраніше запущені" Tag="{x:Static models:LibrarySort.LastPlayedAsc}" />
+                            </ComboBox>
+                            <StackPanel>
+                                <TextBlock Text="Усі ігри" Style="{StaticResource Heading}" FontSize="16" />
+                                <TextBlock x:Name="CounterText" Style="{StaticResource Muted}" FontSize="13" Margin="0,4,0,0" />
+                            </StackPanel>
+                        </DockPanel>
+
+                        <CheckBox x:Name="NeverPlayedCheck" DockPanel.Dock="Top" Style="{StaticResource FilterCheckBox}"
+                                  Content="Тільки ніколи не запускались" Margin="0,14,0,6"
+                                  Checked="Filter_Changed" Unchecked="Filter_Changed" />
+
+                        <TextBlock x:Name="NoMatchesText" DockPanel.Dock="Top" Style="{StaticResource Muted}" Margin="0,8,0,0"
+                                   Text="Немає ігор, які жодного разу не запускались." Visibility="Collapsed" />
+
+                        <ListBox x:Name="GamesList" Style="{StaticResource GameList}" Margin="-8,0">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate DataType="{x:Type library:GameRow}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="48" />
+                                            <ColumnDefinition Width="12" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="12" />
+                                            <ColumnDefinition Width="110" />
+                                            <ColumnDefinition Width="12" />
+                                            <ColumnDefinition Width="84" />
+                                        </Grid.ColumnDefinitions>
+
+                                        <ContentPresenter Grid.Column="0" Content="{Binding IconUrl}" ContentTemplate="{StaticResource Cover}" />
+
+                                        <StackPanel Grid.Column="2" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Name}" FontSize="14" FontWeight="Medium" TextTrimming="CharacterEllipsis" />
+                                            <TextBlock Text="{Binding LastPlayedText}" FontSize="12" Foreground="{StaticResource TextSecondary}"
+                                                       Margin="0,2,0,0" TextTrimming="CharacterEllipsis" />
+                                        </StackPanel>
+
+                                        <!-- Смужка: частка від гри з найбільшим часом у списку -->
+                                        <Border Grid.Column="4" Height="6" CornerRadius="3" Background="{StaticResource SurfaceRaised}"
+                                                VerticalAlignment="Center">
+                                            <Border Width="{Binding BarWidth}" CornerRadius="3" Background="{StaticResource Accent}"
+                                                    HorizontalAlignment="Left" />
+                                        </Border>
+
+                                        <TextBlock Grid.Column="6" Text="{Binding HoursText}" FontSize="13" FontWeight="SemiBold"
+                                                   TextAlignment="Right" VerticalAlignment="Center" />
+                                    </Grid>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </DockPanel>
+                </Border>
+
+                <!-- Майже не грав: < 1 години, спочатку ті, що не запускались -->
+                <Border Grid.Column="2" Style="{StaticResource SectionCard}">
+                    <DockPanel>
+                        <StackPanel DockPanel.Dock="Top" Margin="0,0,0,14">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="Майже не грав" Style="{StaticResource Heading}" FontSize="16" VerticalAlignment="Center" />
+                                <Border Style="{StaticResource Badge}" Margin="8,0,0,0" VerticalAlignment="Center">
+                                    <TextBlock x:Name="BarelyBadgeText" FontSize="12" FontWeight="Medium" Foreground="{StaticResource TextSecondary}" />
+                                </Border>
+                            </StackPanel>
+                            <TextBlock Text="Куплені ігри, до яких варто повернутися" Style="{StaticResource Muted}" FontSize="13" Margin="0,4,0,0" />
+                        </StackPanel>
+
+                        <TextBlock x:Name="NoBarelyText" DockPanel.Dock="Top" Style="{StaticResource Muted}"
+                                   Text="Немає ігор із часом менше 1 години." Visibility="Collapsed" />
+
+                        <ListBox x:Name="BarelyList" Style="{StaticResource GameList}" Margin="-8,0">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate DataType="{x:Type library:BarelyPlayedRow}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="48" />
+                                            <ColumnDefinition Width="12" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="12" />
+                                            <ColumnDefinition Width="56" />
+                                        </Grid.ColumnDefinitions>
+
+                                        <ContentPresenter Grid.Column="0" Content="{Binding IconUrl}" ContentTemplate="{StaticResource Cover}" />
+
+                                        <TextBlock Grid.Column="2" Text="{Binding Name}" FontSize="14" FontWeight="Medium"
+                                                   VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+
+                                        <Border Grid.Column="3" Style="{StaticResource Badge}" Background="{StaticResource WarningSoft}"
+                                                VerticalAlignment="Center" Margin="12,0,0,0"
+                                                Visibility="{Binding NeverPlayed, Converter={StaticResource BoolToVisibility}}">
+                                            <TextBlock Text="Не запускалась" FontSize="12" FontWeight="Medium" Foreground="{StaticResource Warning}" />
+                                        </Border>
+
+                                        <TextBlock Grid.Column="5" Text="{Binding MinutesText}" FontSize="13" FontWeight="SemiBold"
+                                                   Foreground="{StaticResource TextSecondary}" TextAlignment="Right" VerticalAlignment="Center" />
+                                    </Grid>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </DockPanel>
+                </Border>
+            </Grid>
+        </Grid>
+
+        <controls:StateView x:Name="StatePanel" Grid.Row="1" HorizontalAlignment="Left" VerticalAlignment="Top" />
+
+        <!-- Лише в Debug з фейковим сервісом: перемикач, щоб побачити кожен стан екрана -->
+        <StackPanel x:Name="FakeModePanel" Grid.Row="2" Orientation="Horizontal" Margin="0,16,0,0" Visibility="Collapsed">
+            <TextBlock Text="Фейковий сервіс (Debug):" Style="{StaticResource Muted}" VerticalAlignment="Center" Margin="0,0,10,0" />
+            <Border Style="{StaticResource SegmentGroup}">
+                <StackPanel Orientation="Horizontal" RadioButton.Checked="FakeMode_Checked">
+                    <RadioButton Style="{StaticResource SegmentItem}" GroupName="FakeMode" Content="Дані" Tag="Data" IsChecked="True" />
+                    <RadioButton Style="{StaticResource SegmentItem}" GroupName="FakeMode" Content="Порожньо" Tag="Empty" />
+                    <RadioButton Style="{StaticResource SegmentItem}" GroupName="FakeMode" Content="Помилка" Tag="Error" />
+                    <RadioButton Style="{StaticResource SegmentItem}" GroupName="FakeMode" Content="Приватний" Tag="Private" />
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </Grid>
+</UserControl>

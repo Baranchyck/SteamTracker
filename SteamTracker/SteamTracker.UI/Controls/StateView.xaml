@@ -1,0 +1,57 @@
+<!-- Картка стану вікна з макета «10 · Стани вікон»: завантаження, порожньо, помилка API, приватний профіль -->
+<UserControl x:Class="SteamTracker.UI.Controls.StateView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Visibility="Collapsed">
+    <Border Style="{StaticResource SectionCard}" Width="280" MinHeight="220">
+        <StackPanel>
+
+            <!-- Іконка: показується одна, залежно від стану -->
+            <Grid HorizontalAlignment="Left" Margin="0,0,0,10">
+                <!-- Спінер з макета, обертається безкінечно -->
+                <Path x:Name="Spinner" Width="28" Height="28" Fill="{StaticResource Accent}" RenderTransformOrigin="0.5,0.5"
+                      Data="M28 14C28 16.7689 27.1789 19.4757 25.6406 21.778C24.1022 24.0803 21.9157 25.8747 19.3576 26.9343C16.7994 27.9939 13.9845 28.2712 11.2687 27.731C8.55301 27.1908 6.05845 25.8574 4.10051 23.8995C2.14258 21.9416 0.809205 19.447 0.269012 16.7313C-0.271181 14.0155 0.006066 11.2006 1.06569 8.64243C2.12532 6.08427 3.91974 3.89777 6.22202 2.35943C8.52431 0.821086 11.2311 -3.30193e-08 14 0V3.08C11.8402 3.08 9.72896 3.72045 7.93318 4.92035C6.13739 6.12026 4.73775 7.82573 3.91124 9.8211C3.08473 11.8165 2.86848 14.0121 3.28983 16.1304C3.71118 18.2487 4.75121 20.1944 6.2784 21.7216C7.80559 23.2488 9.75135 24.2888 11.8696 24.7102C13.9879 25.1315 16.1835 24.9153 18.1789 24.0888C20.1743 23.2623 21.8797 21.8626 23.0797 20.0668C24.2796 18.271 24.92 16.1598 24.92 14H28Z">
+                    <Path.RenderTransform>
+                        <RotateTransform />
+                    </Path.RenderTransform>
+                    <Path.Triggers>
+                        <EventTrigger RoutedEvent="Loaded">
+                            <BeginStoryboard>
+                                <Storyboard>
+                                    <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(RotateTransform.Angle)"
+                                                     From="0" To="360" Duration="0:0:1" RepeatBehavior="Forever" />
+                                </Storyboard>
+                            </BeginStoryboard>
+                        </EventTrigger>
+                    </Path.Triggers>
+                </Path>
+
+                <Border x:Name="EmptyIcon" Width="40" Height="40" CornerRadius="20" Background="{StaticResource SurfaceRaised}">
+                    <Border Width="18" Height="14" CornerRadius="3" BorderThickness="2" BorderBrush="{StaticResource TextSecondary}" />
+                </Border>
+
+                <Border x:Name="ErrorIcon" Width="40" Height="40" CornerRadius="20" Background="{StaticResource DangerSoft}">
+                    <TextBlock Text="!" FontSize="18" FontWeight="Bold" Foreground="{StaticResource Danger}"
+                               HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Border>
+
+                <Border x:Name="PrivateIcon" Width="40" Height="40" CornerRadius="20" Background="{StaticResource WarningSoft}">
+                    <TextBlock Text="?" FontSize="18" FontWeight="Bold" Foreground="{StaticResource Warning}"
+                               HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Border>
+            </Grid>
+
+            <TextBlock x:Name="TitleText" FontSize="14" FontWeight="SemiBold" TextWrapping="Wrap" />
+            <TextBlock x:Name="MessageText" Style="{StaticResource Muted}" FontSize="12" LineHeight="17" Margin="0,10,0,0" />
+
+            <!-- Скелетон під час завантаження -->
+            <StackPanel x:Name="Skeleton" HorizontalAlignment="Left">
+                <Border Width="240" Height="10" CornerRadius="5" Background="{StaticResource SurfaceRaised}" Margin="0,10,0,0" />
+                <Border Width="160" Height="10" CornerRadius="5" Background="{StaticResource SurfaceRaised}" Margin="0,10,0,0"
+                        HorizontalAlignment="Left" />
+            </StackPanel>
+
+            <Button x:Name="ActionButton" HorizontalAlignment="Left" Margin="0,10,0,0" Click="ActionButton_Click" />
+        </StackPanel>
+    </Border>
+</UserControl>

@@ -14,11 +14,13 @@ namespace SteamTracker.UI.Windows
     public partial class MainWindow : Window
     {
         private readonly IAuthService _auth;
+        private readonly ILibraryService _library;
 
-        public MainWindow(IAuthService auth)
+        public MainWindow(IAuthService auth, ILibraryService library)
         {
             InitializeComponent();
             _auth = auth;
+            _library = library;
 
             ShowUser(_auth.CurrentUser);
             _auth.CurrentUserChanged += Auth_CurrentUserChanged;
@@ -92,9 +94,10 @@ namespace SteamTracker.UI.Windows
             }
         }
 
-        private static UserControl CreateView(string screen) => screen switch
+        private UserControl CreateView(string screen) => screen switch
         {
             "Home" => new HomeView(),
+            "Library" => new LibraryView(_library),
             "AchievementPlanner" => new AchievementPlannerView(),
             "Comparison" => new ComparisonView(),
             "FriendsRadar" => new FriendsRadarView(),
