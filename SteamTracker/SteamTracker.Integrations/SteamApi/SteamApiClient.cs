@@ -21,9 +21,46 @@ public class SteamApiClient : ISteamApiClient
         _apiKey = apiKey;
     }
 
-    public Task<SteamProfile?> GetPlayerSummaryAsync(string steamId, CancellationToken ct = default)
+    public async Task<SteamProfile?> GetPlayerSummaryAsync(string steamId, CancellationToken ct = default)
     {
-        throw new NotImplementedException();
+        var url = "https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v2/"
+                  + $"?key={Uri.EscapeDataString(_apiKey)}"
+                  + $"&steamids={Uri.EscapeDataString(steamId)}"
+                  + "&format=json";
+
+        GetPlayerSummariesEnvelope? envelope;
+        try
+        {
+            envelope = await _httpClient.GetFromJsonAsync<GetPlayerSummariesEnvelope>(url, ct);
+        }
+        catch (HttpRequestException ex)
+        {
+            throw new SteamApiException("Steam API недоступний або повернув помилку.", ex);
+        }
+        catch (JsonException ex)
+        {
+            throw new SteamApiException("Steam API повернув некоректну відповідь.", ex);
+        }
+        catch (TaskCanceledException ex) when (!ct.IsCancellationRequested)
+        {
+            throw new SteamApiException("Steam API не відповів вчасно.", ex);
+        }
+
+        // Неіснуючий SteamId: "players": []
+        var player = envelope?.Response?.Players?.FirstOrDefault();
+        if (player is null)
+            return null;
+
+        return new SteamProfile(
+            SteamId: player.SteamId ?? steamId,
+            PersonaName: player.PersonaName ?? string.Empty,
+            AvatarUrl: player.AvatarFull ?? string.Empty,
+            Visibility: player.CommunityVisibilityState switch
+            {
+                3 => ProfileVisibility.Public,
+                2 => ProfileVisibility.Limited,
+                _ => ProfileVisibility.Private
+            });
     }
 
     public async Task<IReadOnlyList<OwnedGame>> GetOwnedGamesAsync(
