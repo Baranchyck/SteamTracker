@@ -40,7 +40,10 @@ public class SteamApiClient : ISteamApiClient
             SteamId: player.SteamId ?? steamId,
             PersonaName: player.PersonaName ?? string.Empty,
             AvatarUrl: player.AvatarFull ?? string.Empty,
-            Visibility: ToVisibility(player.CommunityVisibilityState));
+            Visibility: ToVisibility(player.CommunityVisibilityState),
+            TimeCreated: player.TimeCreated is long created and > 0
+                ? DateTimeOffset.FromUnixTimeSeconds(created)
+                : null);
     }
 
     public async Task<IReadOnlyList<OwnedGame>> GetOwnedGamesAsync(
