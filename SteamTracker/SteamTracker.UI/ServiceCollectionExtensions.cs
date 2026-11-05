@@ -172,7 +172,7 @@ public static class ServiceCollectionExtensions
     {
         if (useFakes)
         {
-            // FakeFriendsRadarService додається разом з екраном (#75)
+            services.AddSingleton<IFriendsRadarService, FakeFriendsRadarService>();
             return services;
         }
 
