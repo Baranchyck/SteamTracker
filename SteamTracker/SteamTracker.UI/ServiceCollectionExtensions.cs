@@ -145,7 +145,7 @@ public static class ServiceCollectionExtensions
     {
         if (useFakes)
         {
-            // FakeAchievementService додається разом з екраном (#81)
+            services.AddSingleton<IAchievementService, FakeAchievementService>();
             return services;
         }
 
