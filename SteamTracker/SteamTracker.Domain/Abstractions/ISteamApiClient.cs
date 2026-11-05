@@ -23,4 +23,7 @@ public interface ISteamApiClient
     // Однаковий для всіх гравців, тож його можна кешувати на гру.
     Task<IReadOnlyDictionary<string, double>> GetGlobalAchievementPercentagesAsync(
         int appId, CancellationToken ct = default);
+
+    // SteamID64 за vanity-ніком (steamcommunity.com/id/<vanity>). null — такого ніку немає.
+    Task<string?> ResolveVanityUrlAsync(string vanity, CancellationToken ct = default);
 }
