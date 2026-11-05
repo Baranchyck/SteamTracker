@@ -109,6 +109,15 @@ public class SteamApiClient : ISteamApiClient
         return result;
     }
 
+    // Реалізація — окремим PR (#76)
+    public Task<IReadOnlyList<PlayerAchievement>?> GetPlayerAchievementsAsync(
+        string steamId, int appId, CancellationToken ct = default)
+        => throw new NotImplementedException();
+
+    public Task<IReadOnlyDictionary<string, double>> GetGlobalAchievementPercentagesAsync(
+        int appId, CancellationToken ct = default)
+        => throw new NotImplementedException();
+
     // Один шлях для всіх запитів: мережа / не-2xx / таймаут / битий JSON → SteamApiException.
     // nullOnStatus — код, який для конкретного методу означає "даних немає", а не помилку.
     private async Task<T?> GetJsonAsync<T>(
