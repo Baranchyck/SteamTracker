@@ -17,17 +17,13 @@ namespace SteamTracker.UI.Views
     {
         private readonly ILibraryService _library;
         private readonly IAuthService _auth;
-        private readonly IFriendsRadarService? _friends;
+        private readonly IFriendsRadarService _friends;
 
         // Окремий токен на кожен блок: «Повторити» в одному не скасовує завантаження іншого
         private CancellationTokenSource? _libraryCts;
         private CancellationTokenSource? _friendsCts;
 
-        /// <param name="friends">
-        /// null — сервіс друзів не зареєстрований (фейк-режим до появи FakeFriendsRadarService, #75):
-        /// блок друзів показує, що дані недоступні, решта екрана працює.
-        /// </param>
-        public HomeView(ILibraryService library, IAuthService auth, IFriendsRadarService? friends)
+        public HomeView(ILibraryService library, IAuthService auth, IFriendsRadarService friends)
         {
             _library = library;
             _auth = auth;
@@ -174,14 +170,6 @@ namespace SteamTracker.UI.Views
 
         private async Task LoadFriendsAsync()
         {
-            if (_friends is null)
-            {
-                FriendsCard.Visibility = Visibility.Collapsed;
-                FriendsState.Show(StateKind.Empty, "Друзі недоступні",
-                    "Друзі-радар у цьому режимі ще не підключений.");
-                return;
-            }
-
             _friendsCts?.Cancel();
             var cts = new CancellationTokenSource();
             _friendsCts = cts;
