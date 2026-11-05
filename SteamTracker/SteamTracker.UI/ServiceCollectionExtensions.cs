@@ -14,6 +14,7 @@ using SteamTracker.Services.Matchmaker;
 using SteamTracker.Services.PricePerHour;
 using SteamTracker.Services.SteamIds;
 using SteamTracker.UI.Fakes;
+using SteamTracker.UI.Views;
 using SteamTracker.UI.Windows;
 
 namespace SteamTracker.UI;
@@ -39,6 +40,7 @@ public static class ServiceCollectionExtensions
         services.AddAchievementFeature(useFakes);
         services.AddSteamIdResolver(useFakes);
 
+        services.AddScreens();
         services.AddWindows();
         return services;
     }
@@ -161,6 +163,32 @@ public static class ServiceCollectionExtensions
         }
 
         services.AddSingleton<ISteamIdResolver, SteamIdResolver>();
+        return services;
+    }
+
+    // ---------- екрани ----------
+
+    private static IServiceCollection AddScreens(this IServiceCollection services)
+    {
+        services.AddSingleton<ViewFactory>();
+
+        // Tag — значення Tag пункту меню в MainWindow.xaml. Новий екран — один рядок тут.
+        services.AddScreen<HomeView>("Home");
+        services.AddScreen<LibraryView>("Library");
+        services.AddScreen<AchievementPlannerView>("AchievementPlanner");
+        services.AddScreen<ComparisonView>("Comparison");
+        services.AddScreen<FriendsRadarView>("FriendsRadar");
+        services.AddScreen<MatchmakerView>("Matchmaker");
+        services.AddScreen<PricePerHourView>("PricePerHour");
+        return services;
+    }
+
+    // Transient: кожен перехід у меню створює свіжий екран зі своїм станом завантаження
+    private static IServiceCollection AddScreen<TView>(this IServiceCollection services, string tag)
+        where TView : class
+    {
+        services.AddTransient<TView>();
+        services.AddSingleton(new ScreenRegistration(tag, typeof(TView)));
         return services;
     }
 
