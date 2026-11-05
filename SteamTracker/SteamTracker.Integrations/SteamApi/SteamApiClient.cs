@@ -98,6 +98,14 @@ public class SteamApiClient : ISteamApiClient
         return games.Select(ToDomain).ToList();
     }
 
+    // Реалізація — окремим PR (#73)
+    public Task<IReadOnlyList<string>?> GetFriendIdsAsync(string steamId, CancellationToken ct = default)
+        => throw new NotImplementedException();
+
+    public Task<IReadOnlyList<PlayerPresence>> GetPlayerSummariesAsync(
+        IEnumerable<string> steamIds, CancellationToken ct = default)
+        => throw new NotImplementedException();
+
     private static OwnedGame ToDomain(OwnedGameDto d) => new(
         AppId: d.AppId,
         Name: d.Name ?? $"App {d.AppId}",
