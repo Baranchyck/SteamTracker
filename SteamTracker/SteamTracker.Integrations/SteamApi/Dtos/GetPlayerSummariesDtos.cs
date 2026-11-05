@@ -30,6 +30,10 @@ internal class PlayerSummaryDto
     public int CommunityVisibilityState { get; set; }
 
     // Для приватних профілів Steam не віддає поле взагалі
+    // Unix-час реєстрації акаунту; для приватних профілів відсутній
+    [JsonPropertyName("timecreated")]
+    public long? TimeCreated { get; set; }
+
     [JsonPropertyName("personastate")]
     public int? PersonaState { get; set; }
 
