@@ -6,6 +6,7 @@ using SteamTracker.Domain.Abstractions;
 using SteamTracker.Integrations.Auth;
 using SteamTracker.Integrations.SteamApi;
 using SteamTracker.Integrations.Store;
+using SteamTracker.Services.Achievements;
 using SteamTracker.Services.Auth;
 using SteamTracker.Services.Configuration;
 using SteamTracker.Services.Library;
@@ -32,6 +33,7 @@ public static class ServiceCollectionExtensions
         services.AddAuthFeature(useFakes, configuration);
         services.AddLibraryFeature(useFakes);
         services.AddPricePerHourFeature(useFakes);
+        services.AddAchievementFeature(useFakes);
 
         services.AddWindows();
         return services;
@@ -117,6 +119,18 @@ public static class ServiceCollectionExtensions
             });
 
         services.AddSingleton<IPriceAnalyzerService, PriceAnalyzerService>();
+        return services;
+    }
+
+    private static IServiceCollection AddAchievementFeature(this IServiceCollection services, bool useFakes)
+    {
+        if (useFakes)
+        {
+            // FakeAchievementService додається разом з екраном (#81)
+            return services;
+        }
+
+        services.AddSingleton<IAchievementService, AchievementService>();
         return services;
     }
 
