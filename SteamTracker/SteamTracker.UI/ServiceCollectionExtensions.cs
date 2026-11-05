@@ -12,6 +12,7 @@ using SteamTracker.Services.Configuration;
 using SteamTracker.Services.Library;
 using SteamTracker.Services.Matchmaker;
 using SteamTracker.Services.PricePerHour;
+using SteamTracker.Services.SteamIds;
 using SteamTracker.UI.Fakes;
 using SteamTracker.UI.Windows;
 
@@ -36,6 +37,7 @@ public static class ServiceCollectionExtensions
         services.AddMatchmakerFeature(useFakes);
         services.AddPricePerHourFeature(useFakes);
         services.AddAchievementFeature(useFakes);
+        services.AddSteamIdResolver(useFakes);
 
         services.AddWindows();
         return services;
@@ -146,6 +148,19 @@ public static class ServiceCollectionExtensions
         }
 
         services.AddSingleton<IAchievementService, AchievementService>();
+        return services;
+    }
+
+    // Перевірка введених SteamID / посилань / ніків — спільна для Матчмейкера та інших екранів з вводом
+    private static IServiceCollection AddSteamIdResolver(this IServiceCollection services, bool useFakes)
+    {
+        if (useFakes)
+        {
+            // Fake додається разом з екраном Матчмейкера (#88)
+            return services;
+        }
+
+        services.AddSingleton<ISteamIdResolver, SteamIdResolver>();
         return services;
     }
 

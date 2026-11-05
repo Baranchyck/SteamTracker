@@ -167,6 +167,26 @@ public class SteamApiClient : ISteamApiClient
         return result;
     }
 
+    public async Task<string?> ResolveVanityUrlAsync(string vanity, CancellationToken ct = default)
+    {
+        var url = $"{BaseUrl}/ISteamUser/ResolveVanityURL/v1/"
+                  + $"?key={Uri.EscapeDataString(_apiKey)}"
+                  + $"&vanityurl={Uri.EscapeDataString(vanity)}"
+                  + "&url_type=1&format=json"; // 1 — профіль гравця (не група)
+
+        var envelope = await GetJsonAsync<ResolveVanityUrlEnvelope>(url, ct);
+        var response = envelope?.Response
+                       ?? throw new SteamApiException("Steam API повернув некоректну відповідь.");
+
+        return response.Success switch
+        {
+            1 when !string.IsNullOrEmpty(response.SteamId) => response.SteamId,
+            42 => null,
+            _ => throw new SteamApiException(
+                $"Steam API повернув помилку: {response.Message ?? $"success={response.Success}"}.")
+        };
+    }
+
     // Один шлях для всіх запитів: мережа / не-2xx / таймаут / битий JSON → SteamApiException.
     // nullOnStatus — код, який для конкретного методу означає "даних немає", а не помилку.
     // readBodyOnStatus — не-2xx код, тіло якого все одно треба розібрати (Steam пояснює в ньому причину).
