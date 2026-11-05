@@ -1,4 +1,5 @@
-﻿using System.Net.Http.Json;
+﻿using System.Net;
+using System.Net.Http.Json;
 using System.Text.Json;
 using SteamTracker.Domain.Abstractions;
 using SteamTracker.Domain.Exceptions;
@@ -9,8 +10,13 @@ namespace SteamTracker.Integrations.SteamApi;
 
 public class SteamApiClient : ISteamApiClient
 {
+    private const string BaseUrl = "https://api.steampowered.com";
+
     private const string IconBaseUrl =
         "https://media.steampowered.com/steamcommunity/public/images/apps";
+
+    // GetPlayerSummaries приймає не більше 100 SteamID за запит
+    internal const int SummariesBatchSize = 100;
 
     private readonly HttpClient _httpClient;
     private readonly string _apiKey;
@@ -23,28 +29,7 @@ public class SteamApiClient : ISteamApiClient
 
     public async Task<SteamProfile?> GetPlayerSummaryAsync(string steamId, CancellationToken ct = default)
     {
-        var url = "https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v2/"
-                  + $"?key={Uri.EscapeDataString(_apiKey)}"
-                  + $"&steamids={Uri.EscapeDataString(steamId)}"
-                  + "&format=json";
-
-        GetPlayerSummariesEnvelope? envelope;
-        try
-        {
-            envelope = await _httpClient.GetFromJsonAsync<GetPlayerSummariesEnvelope>(url, ct);
-        }
-        catch (HttpRequestException ex)
-        {
-            throw new SteamApiException("Steam API недоступний або повернув помилку.", ex);
-        }
-        catch (JsonException ex)
-        {
-            throw new SteamApiException("Steam API повернув некоректну відповідь.", ex);
-        }
-        catch (TaskCanceledException ex) when (!ct.IsCancellationRequested)
-        {
-            throw new SteamApiException("Steam API не відповів вчасно.", ex);
-        }
+        var envelope = await GetJsonAsync<GetPlayerSummariesEnvelope>(SummariesUrl(steamId), ct);
 
         // Неіснуючий SteamId: "players": []
         var player = envelope?.Response?.Players?.FirstOrDefault();
@@ -55,26 +40,89 @@ public class SteamApiClient : ISteamApiClient
             SteamId: player.SteamId ?? steamId,
             PersonaName: player.PersonaName ?? string.Empty,
             AvatarUrl: player.AvatarFull ?? string.Empty,
-            Visibility: player.CommunityVisibilityState switch
-            {
-                3 => ProfileVisibility.Public,
-                2 => ProfileVisibility.Limited,
-                _ => ProfileVisibility.Private
-            });
+            Visibility: ToVisibility(player.CommunityVisibilityState));
     }
 
     public async Task<IReadOnlyList<OwnedGame>> GetOwnedGamesAsync(
         string steamId, CancellationToken ct = default)
     {
-        var url = "https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/"
+        var url = $"{BaseUrl}/IPlayerService/GetOwnedGames/v1/"
                   + $"?key={Uri.EscapeDataString(_apiKey)}"
                   + $"&steamid={Uri.EscapeDataString(steamId)}"
                   + "&include_appinfo=true&include_played_free_games=true&format=json";
 
-        GetOwnedGamesEnvelope? envelope;
+        var envelope = await GetJsonAsync<GetOwnedGamesEnvelope>(url, ct);
+
+        // Закритий профіль: "response": {} без game_count і games.
+        // TODO(#93): тут має бути null, а не порожній список
+        var games = envelope?.Response?.Games;
+        if (envelope?.Response?.GameCount is null || games is null)
+            return Array.Empty<OwnedGame>();
+
+        return games.Select(ToDomain).ToList();
+    }
+
+    public async Task<IReadOnlyList<string>?> GetFriendIdsAsync(
+        string steamId, CancellationToken ct = default)
+    {
+        var url = $"{BaseUrl}/ISteamUser/GetFriendList/v1/"
+                  + $"?key={Uri.EscapeDataString(_apiKey)}"
+                  + $"&steamid={Uri.EscapeDataString(steamId)}"
+                  + "&relationship=friend&format=json";
+
+        // Закритий список друзів Steam віддає як HTTP 401 — це не помилка, а стан приватності
+        var envelope = await GetJsonAsync<GetFriendListEnvelope>(url, ct, nullOnStatus: HttpStatusCode.Unauthorized);
+        if (envelope is null)
+            return null;
+
+        // Відкритий профіль без друзів: friendslist або friends відсутні
+        return envelope.FriendsList?.Friends?
+                   .Select(f => f.SteamId)
+                   .OfType<string>()
+                   .ToList()
+               ?? (IReadOnlyList<string>)Array.Empty<string>();
+    }
+
+    public async Task<IReadOnlyList<PlayerPresence>> GetPlayerSummariesAsync(
+        IEnumerable<string> steamIds, CancellationToken ct = default)
+    {
+        var ids = steamIds
+            .Where(id => !string.IsNullOrWhiteSpace(id))
+            .Distinct()
+            .ToList();
+
+        var result = new List<PlayerPresence>(ids.Count);
+
+        // Пачки йдуть послідовно: їх максимум кілька, а паралельність тут лише ризикує лімітами Steam
+        foreach (var batch in ids.Chunk(SummariesBatchSize))
+        {
+            var envelope = await GetJsonAsync<GetPlayerSummariesEnvelope>(SummariesUrl(batch), ct);
+            var players = envelope?.Response?.Players;
+            if (players is null)
+                continue;
+
+            result.AddRange(players
+                .Where(p => !string.IsNullOrEmpty(p.SteamId))
+                .Select(ToPresence));
+        }
+
+        return result;
+    }
+
+    // Один шлях для всіх запитів: мережа / не-2xx / таймаут / битий JSON → SteamApiException.
+    // nullOnStatus — код, який для конкретного методу означає "даних немає", а не помилку.
+    private async Task<T?> GetJsonAsync<T>(
+        string url, CancellationToken ct, HttpStatusCode? nullOnStatus = null) where T : class
+    {
         try
         {
-            envelope = await _httpClient.GetFromJsonAsync<GetOwnedGamesEnvelope>(url, ct);
+            using var response = await _httpClient.GetAsync(url, ct);
+
+            if (nullOnStatus is not null && response.StatusCode == nullOnStatus)
+                return null;
+
+            response.EnsureSuccessStatusCode();
+            return await response.Content.ReadFromJsonAsync<T>(ct);
         }
         catch (HttpRequestException ex)
         {
@@ -88,23 +136,35 @@ public class SteamApiClient : ISteamApiClient
         {
             throw new SteamApiException("Steam API не відповів вчасно.", ex);
         }
-
-        // Закритий профіль: "response": {} без game_count і games.
-        // TODO(#нова-таска): тут має бути null, а не порожній список
-        var games = envelope?.Response?.Games;
-        if (envelope?.Response?.GameCount is null || games is null)
-            return Array.Empty<OwnedGame>();
-
-        return games.Select(ToDomain).ToList();
     }
 
-    // Реалізація — окремим PR (#73)
-    public Task<IReadOnlyList<string>?> GetFriendIdsAsync(string steamId, CancellationToken ct = default)
-        => throw new NotImplementedException();
+    private string SummariesUrl(IEnumerable<string> steamIds) =>
+        $"{BaseUrl}/ISteamUser/GetPlayerSummaries/v2/"
+        + $"?key={Uri.EscapeDataString(_apiKey)}"
+        + $"&steamids={string.Join(",", steamIds.Select(Uri.EscapeDataString))}"
+        + "&format=json";
 
-    public Task<IReadOnlyList<PlayerPresence>> GetPlayerSummariesAsync(
-        IEnumerable<string> steamIds, CancellationToken ct = default)
-        => throw new NotImplementedException();
+    private string SummariesUrl(string steamId) => SummariesUrl(new[] { steamId });
+
+    // 1 — приватний, 2 — лише для друзів, 3 — публічний
+    private static ProfileVisibility ToVisibility(int state) => state switch
+    {
+        3 => ProfileVisibility.Public,
+        2 => ProfileVisibility.Limited,
+        _ => ProfileVisibility.Private
+    };
+
+    private static PlayerPresence ToPresence(PlayerSummaryDto p) => new(
+        SteamId: p.SteamId!,
+        PersonaName: p.PersonaName ?? string.Empty,
+        AvatarUrl: p.AvatarFull ?? string.Empty,
+        Visibility: ToVisibility(p.CommunityVisibilityState),
+        PersonaState: p.PersonaState is { } s && Enum.IsDefined(typeof(PersonaState), s)
+            ? (PersonaState)s
+            : PersonaState.Offline,
+        // Non-Steam гра має 64-бітний gameid, який не влазить в int → null, назва лишається
+        CurrentGameId: int.TryParse(p.GameId, out var appId) ? appId : null,
+        CurrentGameName: string.IsNullOrEmpty(p.GameExtraInfo) ? null : p.GameExtraInfo);
 
     private static OwnedGame ToDomain(OwnedGameDto d) => new(
         AppId: d.AppId,
