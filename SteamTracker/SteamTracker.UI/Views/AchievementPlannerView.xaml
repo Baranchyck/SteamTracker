@@ -1,12 +1,176 @@
+<!-- Екран «Досягнення» за макетом Figma «03 · Досягнення» + вимоги issue #81 -->
 <UserControl x:Class="SteamTracker.UI.Views.AchievementPlannerView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <StackPanel>
-        <TextBlock Text="Досягнення" Style="{StaticResource Title}" />
-        <TextBlock Text="Плануй, які досягнення закрити далі" Style="{StaticResource Muted}" Margin="0,4,0,24" />
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:SteamTracker.UI.Controls"
+             xmlns:achievements="clr-namespace:SteamTracker.UI.Views.Achievements">
 
-        <Border Style="{StaticResource Card}">
-            <TextBlock Text="Екран у розробці" Style="{StaticResource Muted}" />
-        </Border>
-    </StackPanel>
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
+    </UserControl.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- Заголовок і вибір гри -->
+        <DockPanel Grid.Row="0" Margin="0,0,0,20">
+            <ComboBox x:Name="GameBox" DockPanel.Dock="Right" Style="{StaticResource SortComboBox}" MinWidth="240"
+                      VerticalAlignment="Center" Visibility="Collapsed"
+                      SelectionChanged="Game_Changed" />
+            <StackPanel>
+                <TextBlock Text="Досягнення" Style="{StaticResource Title}" />
+                <TextBlock Text="Обери гру, щоб побачити, що закрити далі" Style="{StaticResource Muted}" Margin="0,4,0,0" />
+            </StackPanel>
+        </DockPanel>
+
+        <!-- Вміст екрана; ховається, коли показується картка стану -->
+        <Grid Grid.Row="1" x:Name="ContentPanel" Visibility="Collapsed">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <Grid Grid.Row="0" Margin="0,0,0,20">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="16" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <!-- Поточний прогрес обраної гри -->
+                <Border Grid.Column="0" Style="{StaticResource SectionCard}">
+                    <StackPanel>
+                        <TextBlock Text="Поточний прогрес" Style="{StaticResource StatLabel}" />
+                        <StackPanel Orientation="Horizontal" Margin="0,6">
+                            <TextBlock x:Name="ProgressPercentText" Style="{StaticResource StatValue}" Margin="0" />
+                            <TextBlock x:Name="ProgressCountText" Style="{StaticResource StatCaption}" VerticalAlignment="Bottom"
+                                       Margin="10,0,0,6" />
+                        </StackPanel>
+                        <!-- Смужка прогресу: ширину частин задають пропорційні колонки (закрито / лишилось) -->
+                        <Border Height="6" CornerRadius="3" Background="{StaticResource SurfaceRaised}" Margin="0,8,0,0">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition x:Name="ProgressDoneColumn" Width="0*" />
+                                    <ColumnDefinition x:Name="ProgressLeftColumn" Width="1*" />
+                                </Grid.ColumnDefinitions>
+                                <Border Grid.Column="0" CornerRadius="3" Background="{StaticResource Accent}" />
+                            </Grid>
+                        </Border>
+                    </StackPanel>
+                </Border>
+
+                <!-- Калькулятор цілі (roadmap): скільки найлегших ачівок закрити, щоб підняти % на N пунктів -->
+                <Border Grid.Column="2" Style="{StaticResource SectionCard}">
+                    <StackPanel>
+                        <TextBlock Text="Калькулятор цілі" Style="{StaticResource StatLabel}" />
+                        <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                            <TextBlock Text="Підняти прогрес на" VerticalAlignment="Center" FontSize="14" />
+                            <TextBox x:Name="TargetBox" Style="{StaticResource NumberBox}" Margin="10,0" MaxLength="3"
+                                     Text="10" TextChanged="Target_Changed" PreviewTextInput="Target_PreviewTextInput" />
+                            <TextBlock Text="відсоткових пунктів" VerticalAlignment="Center" FontSize="14" />
+                        </StackPanel>
+
+                        <Border x:Name="RoadmapBanner" Background="{StaticResource NavActive}" CornerRadius="8"
+                                Padding="12,8" Margin="0,12,0,0">
+                            <TextBlock TextWrapping="Wrap" FontSize="13">
+                                <Run x:Name="RoadmapCountRun" FontWeight="SemiBold" />
+                                <Run x:Name="RoadmapResultRun" Foreground="{StaticResource Accent}" />
+                            </TextBlock>
+                        </Border>
+
+                        <TextBlock x:Name="RoadmapHintText" Style="{StaticResource Muted}" FontSize="13" Margin="0,12,0,0"
+                                   Visibility="Collapsed" />
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <!-- Незакриті досягнення обраної гри -->
+            <Border Grid.Row="1" Style="{StaticResource SectionCard}">
+                <DockPanel>
+                    <DockPanel DockPanel.Dock="Top">
+                        <ComboBox x:Name="SortBox" DockPanel.Dock="Right" Style="{StaticResource SortComboBox}"
+                                  VerticalAlignment="Center" SelectionChanged="Sort_Changed">
+                            <ComboBoxItem Content="Сортування: від найпоширеніших" Tag="Easiest" IsSelected="True" />
+                            <ComboBoxItem Content="Сортування: від найрідкісніших" Tag="Rarest" />
+                        </ComboBox>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="Незакриті досягнення" Style="{StaticResource Heading}" FontSize="16" VerticalAlignment="Center" />
+                            <Border Style="{StaticResource Badge}" Margin="8,0,0,0" VerticalAlignment="Center">
+                                <TextBlock x:Name="RemainingBadgeText" FontSize="12" FontWeight="Medium" Foreground="{StaticResource TextSecondary}" />
+                            </Border>
+                        </StackPanel>
+                    </DockPanel>
+
+                    <!-- Пояснення, що означає глобальний % -->
+                    <Border DockPanel.Dock="Top" Background="{StaticResource WarningSoft}" CornerRadius="8" Padding="12,8" Margin="0,14,0,10">
+                        <StackPanel Orientation="Horizontal">
+                            <Ellipse Width="6" Height="6" Fill="{StaticResource Warning}" VerticalAlignment="Center" Margin="0,0,10,0" />
+                            <TextBlock Text="Глобальний % — частка гравців Steam, які отримали досягнення. Це не показник його складності."
+                                       FontSize="12" Foreground="{StaticResource Warning}" TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Border>
+
+                    <TextBlock x:Name="AllDoneText" DockPanel.Dock="Top" Style="{StaticResource Muted}" Margin="0,8,0,0"
+                               Text="Усі досягнення цієї гри вже закрито." Visibility="Collapsed" />
+
+                    <ListBox x:Name="AchievementsList" Style="{StaticResource GameList}" Margin="-8,0">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate DataType="{x:Type achievements:AchievementRow}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="32" />
+                                        <ColumnDefinition Width="12" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="12" />
+                                        <ColumnDefinition Width="160" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <!-- Заглушка іконки ачівки; синя рамка — ачівка входить у план калькулятора цілі -->
+                                    <Border Grid.Column="0" Width="32" Height="32" CornerRadius="6" Background="{StaticResource SurfaceRaised}">
+                                        <Border Width="12" Height="12" CornerRadius="3" Background="{StaticResource TextSecondary}" Opacity="0.35" />
+                                    </Border>
+                                    <Border Grid.Column="0" Width="32" Height="32" CornerRadius="6" BorderBrush="{StaticResource Accent}"
+                                            BorderThickness="2" Visibility="{Binding InRoadmap, Converter={StaticResource BoolToVisibility}}" />
+
+                                    <StackPanel Grid.Column="2" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding Name}" FontSize="14" FontWeight="Medium" TextTrimming="CharacterEllipsis" />
+                                        <TextBlock Text="{Binding Description}" FontSize="12" Foreground="{StaticResource TextSecondary}"
+                                                   Margin="0,2,0,0" TextTrimming="CharacterEllipsis" />
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Column="4" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding PercentText}" FontSize="12" Foreground="{StaticResource TextSecondary}"
+                                                   TextAlignment="Right" />
+                                        <Border Height="6" CornerRadius="3" Background="{StaticResource SurfaceRaised}" Margin="0,4,0,0">
+                                            <Border Width="{Binding BarWidth}" CornerRadius="3" Background="{Binding BarBrush}"
+                                                    HorizontalAlignment="Left" />
+                                        </Border>
+                                    </StackPanel>
+                                </Grid>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </DockPanel>
+            </Border>
+        </Grid>
+
+        <controls:StateView x:Name="StatePanel" Grid.Row="1" HorizontalAlignment="Left" VerticalAlignment="Top" />
+
+        <!-- Лише в Debug з фейковим сервісом: перемикач, щоб побачити кожен стан екрана -->
+        <StackPanel x:Name="FakeModePanel" Grid.Row="2" Orientation="Horizontal" Margin="0,16,0,0" Visibility="Collapsed">
+            <TextBlock Text="Фейковий сервіс (Debug):" Style="{StaticResource Muted}" VerticalAlignment="Center" Margin="0,0,10,0" />
+            <Border Style="{StaticResource SegmentGroup}">
+                <StackPanel Orientation="Horizontal" RadioButton.Checked="FakeMode_Checked">
+                    <RadioButton Style="{StaticResource SegmentItem}" GroupName="FakeMode" Content="Дані" Tag="Data" IsChecked="True" />
+                    <RadioButton Style="{StaticResource SegmentItem}" GroupName="FakeMode" Content="Порожньо" Tag="Empty" />
+                    <RadioButton Style="{StaticResource SegmentItem}" GroupName="FakeMode" Content="Помилка" Tag="Error" />
+                    <RadioButton Style="{StaticResource SegmentItem}" GroupName="FakeMode" Content="Приватний" Tag="Private" />
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </Grid>
 </UserControl>
