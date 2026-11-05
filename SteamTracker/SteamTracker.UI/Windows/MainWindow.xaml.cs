@@ -14,13 +14,13 @@ namespace SteamTracker.UI.Windows
     public partial class MainWindow : Window
     {
         private readonly IAuthService _auth;
-        private readonly ILibraryService _library;
+        private readonly ViewFactory _views;
 
-        public MainWindow(IAuthService auth, ILibraryService library)
+        public MainWindow(IAuthService auth, ViewFactory views)
         {
             InitializeComponent();
             _auth = auth;
-            _library = library;
+            _views = views;
 
             ShowUser(_auth.CurrentUser);
             _auth.CurrentUserChanged += Auth_CurrentUserChanged;
@@ -90,20 +90,8 @@ namespace SteamTracker.UI.Windows
         {
             if (e.OriginalSource is RadioButton { Tag: string screen })
             {
-                MainContent.Content = CreateView(screen);
+                MainContent.Content = _views.Create(screen);
             }
         }
-
-        private UserControl CreateView(string screen) => screen switch
-        {
-            "Home" => new HomeView(),
-            "Library" => new LibraryView(_library),
-            "AchievementPlanner" => new AchievementPlannerView(),
-            "Comparison" => new ComparisonView(),
-            "FriendsRadar" => new FriendsRadarView(),
-            "Matchmaker" => new MatchmakerView(),
-            "PricePerHour" => new PricePerHourView(),
-            _ => throw new ArgumentOutOfRangeException(nameof(screen), screen, "Unknown screen")
-        };
     }
 }
