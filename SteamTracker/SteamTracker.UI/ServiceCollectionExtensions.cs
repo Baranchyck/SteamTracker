@@ -201,12 +201,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<ViewFactory>();
 
         // Tag — значення Tag пункту меню в MainWindow.xaml. Новий екран — один рядок тут.
-        // Друзі на Головній необов'язкові: у фейк-режимі IFriendsRadarService з'явиться лише з #75.
-        // Після #75 можна повернути звичайний AddScreen<HomeView>.
-        services.AddScreen("Home", sp => new HomeView(
-            sp.GetRequiredService<ILibraryService>(),
-            sp.GetRequiredService<IAuthService>(),
-            sp.GetService<IFriendsRadarService>()));
+        services.AddScreen<HomeView>("Home");
         services.AddScreen<LibraryView>("Library");
         services.AddScreen<AchievementPlannerView>("AchievementPlanner");
         services.AddScreen<ComparisonView>("Comparison");
@@ -221,16 +216,6 @@ public static class ServiceCollectionExtensions
         where TView : class
     {
         services.AddTransient<TView>();
-        services.AddSingleton(new ScreenRegistration(tag, typeof(TView)));
-        return services;
-    }
-
-    // Варіант для екрана, якому потрібна необов'язкова залежність (GetService замість конструктора з DI)
-    private static IServiceCollection AddScreen<TView>(
-        this IServiceCollection services, string tag, Func<IServiceProvider, TView> factory)
-        where TView : class
-    {
-        services.AddTransient(factory);
         services.AddSingleton(new ScreenRegistration(tag, typeof(TView)));
         return services;
     }
