@@ -186,7 +186,7 @@ public static class ServiceCollectionExtensions
     {
         if (useFakes)
         {
-            // FakeComparisonService додається разом з екраном (#83)
+            services.AddSingleton<IComparisonService, FakeComparisonService>();
             return services;
         }
 
