@@ -41,6 +41,18 @@ public class SqliteUserRepositoryTests : IDisposable
     }
 
     [Fact]
+    public async Task Upsert_ThenGet_KeepsTimeCreated()
+    {
+        var repo = new SqliteUserRepository(_db.CreateFactory());
+        var profile = new SteamProfile("1", "Gabe", "", ProfileVisibility.Public,
+            DateTimeOffset.FromUnixTimeSeconds(1063407589));
+
+        await repo.UpsertAsync(profile);
+
+        Assert.Equal(profile, await repo.GetAsync("1"));
+    }
+
+    [Fact]
     public async Task Get_Unknown_ReturnsNull()
     {
         var repo = new SqliteUserRepository(_db.CreateFactory());
