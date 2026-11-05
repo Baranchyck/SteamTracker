@@ -1,4 +1,5 @@
-﻿using System.Reflection;
+﻿using System.Data;
+using System.Reflection;
 
 namespace SteamTracker.DataAccess
 {
@@ -22,6 +23,23 @@ namespace SteamTracker.DataAccess
 
             command.CommandText = sql;
             command.ExecuteNonQuery();
+
+            // CREATE TABLE IF NOT EXISTS не чіпає таблиці з БД, створеної старішою версією,
+            // тож колонки, додані пізніше, доводимо окремо
+            EnsureColumn(connection, "Users", "TimeCreated", "INTEGER");
+        }
+
+        // Назви таблиць і колонок — константи з коду, не ввід користувача
+        private static void EnsureColumn(IDbConnection connection, string table, string column, string type)
+        {
+            using var check = connection.CreateCommand();
+            check.CommandText = $"SELECT COUNT(*) FROM pragma_table_info('{table}') WHERE name = '{column}';";
+            if (Convert.ToInt64(check.ExecuteScalar()) > 0)
+                return;
+
+            using var alter = connection.CreateCommand();
+            alter.CommandText = $"ALTER TABLE {table} ADD COLUMN {column} {type};";
+            alter.ExecuteNonQuery();
         }
 
         private static string ReadSchema()

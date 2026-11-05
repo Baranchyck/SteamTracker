@@ -75,7 +75,8 @@ CREATE TABLE IF NOT EXISTS Users (
     PersonaName  TEXT    NOT NULL,
     AvatarUrl    TEXT    NOT NULL,
     Visibility   INTEGER NOT NULL,          -- ProfileVisibility (enum) як int
-    UpdatedAt    TEXT    NOT NULL           -- ISO-8601 UTC
+    UpdatedAt    TEXT    NOT NULL,          -- ISO-8601 UTC
+    TimeCreated  INTEGER                    -- nullable: unix-час реєстрації акаунту, відсутній для приватних профілів
 );
 
 -- Налаштування застосунку key-value (напр. Settings["CurrentSteamId"]).

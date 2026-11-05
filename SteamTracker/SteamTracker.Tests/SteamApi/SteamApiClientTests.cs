@@ -57,6 +57,32 @@ public class SteamApiClientTests
         Assert.Contains($"steamids={SteamId}", handler.LastRequestUri.Query);
     }
 
+    [Fact]
+    public async Task GetPlayerSummary_MapsTimeCreated()
+    {
+        var (client, _) = Create($$$"""
+            {"response":{"players":[{"steamid":"{{{SteamId}}}","personaname":"x","avatarfull":"",
+                "communityvisibilitystate":3,"timecreated":1063407589}]}}
+            """);
+
+        var profile = await client.GetPlayerSummaryAsync(SteamId);
+
+        Assert.Equal(DateTimeOffset.FromUnixTimeSeconds(1063407589), profile!.TimeCreated);
+    }
+
+    [Fact]
+    public async Task GetPlayerSummary_NoTimeCreated_IsNull()
+    {
+        // Приватний профіль: Steam не віддає timecreated
+        var (client, _) = Create($$$"""
+            {"response":{"players":[{"steamid":"{{{SteamId}}}","personaname":"x","avatarfull":"","communityvisibilitystate":1}]}}
+            """);
+
+        var profile = await client.GetPlayerSummaryAsync(SteamId);
+
+        Assert.Null(profile!.TimeCreated);
+    }
+
     [Theory]
     [InlineData(1, ProfileVisibility.Private)]
     [InlineData(2, ProfileVisibility.Limited)]
