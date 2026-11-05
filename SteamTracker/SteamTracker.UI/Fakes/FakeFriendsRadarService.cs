@@ -11,7 +11,8 @@ namespace SteamTracker.UI.Fakes
     {
         private static readonly TimeSpan LoadDelay = TimeSpan.FromMilliseconds(500);
 
-        private static readonly IReadOnlyList<PlayerPresence> Friends = new[]
+        // internal: ті самі друзі потрібні FakeMatchmakerService, щоб ніки й SteamID збігалися
+        internal static readonly IReadOnlyList<PlayerPresence> Friends = new[]
         {
             F("76561198000000001", "Андрій", PersonaState.Online, 900001, "Starfall Tactics"),
             F("76561198000000002", "Марта", PersonaState.Online, 548430, "Deep Rock Galactic"),

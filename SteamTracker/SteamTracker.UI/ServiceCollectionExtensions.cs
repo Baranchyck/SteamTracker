@@ -117,7 +117,7 @@ public static class ServiceCollectionExtensions
     {
         if (useFakes)
         {
-            // FakeMatchmakerService додається разом з екраном (#88)
+            services.AddSingleton<IMatchmakerService, FakeMatchmakerService>();
             return services;
         }
 
@@ -162,7 +162,7 @@ public static class ServiceCollectionExtensions
     {
         if (useFakes)
         {
-            // Fake додається разом з екраном Матчмейкера (#88)
+            // Окремий фейк не потрібен: FakeMatchmakerService сам розпізнає вводи серед фейкових друзів
             return services;
         }
 
