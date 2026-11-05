@@ -5,9 +5,11 @@ using SteamTracker.DataAccess;
 using SteamTracker.Domain.Abstractions;
 using SteamTracker.Integrations.Auth;
 using SteamTracker.Integrations.SteamApi;
+using SteamTracker.Integrations.Store;
 using SteamTracker.Services.Auth;
 using SteamTracker.Services.Configuration;
 using SteamTracker.Services.Library;
+using SteamTracker.Services.PricePerHour;
 using SteamTracker.UI.Fakes;
 using SteamTracker.UI.Windows;
 
@@ -29,6 +31,7 @@ public static class ServiceCollectionExtensions
         // Кожен feature-PR додає/правит тільки свій рядок нижче.
         services.AddAuthFeature(useFakes, configuration);
         services.AddLibraryFeature(useFakes);
+        services.AddPricePerHourFeature(useFakes);
 
         services.AddWindows();
         return services;
@@ -95,6 +98,25 @@ public static class ServiceCollectionExtensions
         }
 
         services.AddSingleton<ILibraryService, LibraryService>();
+        return services;
+    }
+
+    private static IServiceCollection AddPricePerHourFeature(this IServiceCollection services, bool useFakes)
+    {
+        if (useFakes)
+        {
+            // FakePriceAnalyzerService додається разом з екраном (#85)
+            return services;
+        }
+
+        // Store — інший хост і без ключа API, тому не в AddSteamInfrastructure
+        services.AddHttpClient<IStoreClient, StoreClient>(http => new StoreClient(http))
+            .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
+            {
+                PooledConnectionLifetime = TimeSpan.FromMinutes(5)
+            });
+
+        services.AddSingleton<IPriceAnalyzerService, PriceAnalyzerService>();
         return services;
     }
 
