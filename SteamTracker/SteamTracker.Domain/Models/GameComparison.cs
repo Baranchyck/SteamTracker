@@ -7,7 +7,7 @@ public record GameComparison(
     IReadOnlyList<ComparisonEntry> Ranking,
     int UserRank,
     // Час користувача у % від середнього (150 = в 1,5 раза більше).
-    // Середнє — лише серед тих, у кого гра є і час > 0; null, якщо таких немає
+    // Середнє — лише серед друзів, у кого гра є і час > 0; null, якщо таких немає
     decimal? PercentOfAverage,
     IReadOnlyList<SteamProfile> FriendsWithoutGame,
     // Бібліотека прихована — невідомо, чи є гра, тому окремо, а не "0 годин"

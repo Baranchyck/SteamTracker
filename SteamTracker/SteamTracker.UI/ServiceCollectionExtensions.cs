@@ -8,6 +8,7 @@ using SteamTracker.Integrations.SteamApi;
 using SteamTracker.Integrations.Store;
 using SteamTracker.Services.Achievements;
 using SteamTracker.Services.Auth;
+using SteamTracker.Services.Comparison;
 using SteamTracker.Services.Configuration;
 using SteamTracker.Services.FriendsRadar;
 using SteamTracker.Services.Library;
@@ -41,6 +42,7 @@ public static class ServiceCollectionExtensions
         services.AddAchievementFeature(useFakes);
         services.AddSteamIdResolver(useFakes);
         services.AddFriendsRadarFeature(useFakes);
+        services.AddComparisonFeature(useFakes);
 
         services.AddScreens();
         services.AddWindows();
@@ -177,6 +179,18 @@ public static class ServiceCollectionExtensions
         }
 
         services.AddSingleton<IFriendsRadarService, FriendsRadarService>();
+        return services;
+    }
+
+    private static IServiceCollection AddComparisonFeature(this IServiceCollection services, bool useFakes)
+    {
+        if (useFakes)
+        {
+            // FakeComparisonService додається разом з екраном (#83)
+            return services;
+        }
+
+        services.AddSingleton<IComparisonService, ComparisonService>();
         return services;
     }
 
