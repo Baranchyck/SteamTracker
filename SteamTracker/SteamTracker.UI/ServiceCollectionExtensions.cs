@@ -10,6 +10,7 @@ using SteamTracker.Services.Achievements;
 using SteamTracker.Services.Auth;
 using SteamTracker.Services.Configuration;
 using SteamTracker.Services.Library;
+using SteamTracker.Services.Matchmaker;
 using SteamTracker.Services.PricePerHour;
 using SteamTracker.Services.SteamIds;
 using SteamTracker.UI.Fakes;
@@ -33,6 +34,7 @@ public static class ServiceCollectionExtensions
         // Кожен feature-PR додає/правит тільки свій рядок нижче.
         services.AddAuthFeature(useFakes, configuration);
         services.AddLibraryFeature(useFakes);
+        services.AddMatchmakerFeature(useFakes);
         services.AddPricePerHourFeature(useFakes);
         services.AddAchievementFeature(useFakes);
         services.AddSteamIdResolver(useFakes);
@@ -102,6 +104,19 @@ public static class ServiceCollectionExtensions
         }
 
         services.AddSingleton<ILibraryService, LibraryService>();
+        return services;
+    }
+
+    private static IServiceCollection AddMatchmakerFeature(this IServiceCollection services, bool useFakes)
+    {
+        if (useFakes)
+        {
+            // FakeMatchmakerService додається разом з екраном (#88)
+            return services;
+        }
+
+        // Потребує ISteamIdResolver — його реєструє #86
+        services.AddSingleton<IMatchmakerService, MatchmakerService>();
         return services;
     }
 
