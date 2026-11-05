@@ -22,19 +22,21 @@ namespace SteamTracker.DataAccess
             using var command = connection.CreateCommand();
 
             command.CommandText = """
-                INSERT INTO Users (SteamId, PersonaName, AvatarUrl, Visibility, UpdatedAt)
-                VALUES ($steamId, $personaName, $avatarUrl, $visibility, $updatedAt)
+                INSERT INTO Users (SteamId, PersonaName, AvatarUrl, Visibility, UpdatedAt, TimeCreated)
+                VALUES ($steamId, $personaName, $avatarUrl, $visibility, $updatedAt, $timeCreated)
                 ON CONFLICT (SteamId) DO UPDATE SET
                     PersonaName = excluded.PersonaName,
                     AvatarUrl   = excluded.AvatarUrl,
                     Visibility  = excluded.Visibility,
-                    UpdatedAt   = excluded.UpdatedAt;
+                    UpdatedAt   = excluded.UpdatedAt,
+                    TimeCreated = excluded.TimeCreated;
                 """;
             command.AddParameter("$steamId", p.SteamId);
             command.AddParameter("$personaName", p.PersonaName);
             command.AddParameter("$avatarUrl", p.AvatarUrl);
             command.AddParameter("$visibility", (int)p.Visibility);
             command.AddParameter("$updatedAt", DateTime.UtcNow.ToString("O", CultureInfo.InvariantCulture));
+            command.AddParameter("$timeCreated", p.TimeCreated?.ToUnixTimeSeconds());
 
             await command.ExecuteNonQueryAsync();
         }
@@ -45,7 +47,7 @@ namespace SteamTracker.DataAccess
             using var command = connection.CreateCommand();
 
             command.CommandText = """
-                SELECT SteamId, PersonaName, AvatarUrl, Visibility
+                SELECT SteamId, PersonaName, AvatarUrl, Visibility, TimeCreated
                 FROM Users
                 WHERE SteamId = $steamId;
                 """;
@@ -59,7 +61,8 @@ namespace SteamTracker.DataAccess
                 reader.GetString(0),
                 reader.GetString(1),
                 reader.GetString(2),
-                (ProfileVisibility)reader.GetInt32(3));
+                (ProfileVisibility)reader.GetInt32(3),
+                reader.IsDBNull(4) ? null : DateTimeOffset.FromUnixTimeSeconds(reader.GetInt64(4)));
         }
     }
 }
