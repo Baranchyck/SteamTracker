@@ -1,5 +1,4 @@
 using System.Net;
-using System.Text;
 using System.Web;
 using SteamTracker.Domain.Exceptions;
 using SteamTracker.Domain.Models;
@@ -11,36 +10,6 @@ public class SteamApiClientFriendsTests
 {
     private const string SteamId = "76561197960287930";
     private const long FirstId = 76561197960287930;
-
-    // На кожен запит відповідає функцією й запам'ятовує всі запити — потрібно для перевірки пачок
-    private sealed class RecordingHandler : HttpMessageHandler
-    {
-        private readonly Func<HttpRequestMessage, (HttpStatusCode Status, string Body)> _respond;
-
-        public RecordingHandler(Func<HttpRequestMessage, (HttpStatusCode, string)> respond) => _respond = respond;
-
-        public List<Uri> Requests { get; } = new();
-
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
-        {
-            Requests.Add(request.RequestUri!);
-            var (status, body) = _respond(request);
-            return Task.FromResult(new HttpResponseMessage(status)
-            {
-                Content = new StringContent(body, Encoding.UTF8, "application/json")
-            });
-        }
-    }
-
-    private sealed class ThrowingHandler : HttpMessageHandler
-    {
-        private readonly Exception _exception;
-
-        public ThrowingHandler(Exception exception) => _exception = exception;
-
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
-            => Task.FromException<HttpResponseMessage>(_exception);
-    }
 
     private static (SteamApiClient Client, RecordingHandler Handler) Create(
         string body, HttpStatusCode status = HttpStatusCode.OK)

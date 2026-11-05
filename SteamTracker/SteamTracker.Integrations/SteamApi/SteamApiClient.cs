@@ -109,19 +109,72 @@ public class SteamApiClient : ISteamApiClient
         return result;
     }
 
-    // Реалізація — окремим PR (#76)
-    public Task<IReadOnlyList<PlayerAchievement>?> GetPlayerAchievementsAsync(
+    public async Task<IReadOnlyList<PlayerAchievement>?> GetPlayerAchievementsAsync(
         string steamId, int appId, CancellationToken ct = default)
-        => throw new NotImplementedException();
+    {
+        var url = $"{BaseUrl}/ISteamUserStats/GetPlayerAchievements/v1/"
+                  + $"?key={Uri.EscapeDataString(_apiKey)}"
+                  + $"&steamid={Uri.EscapeDataString(steamId)}"
+                  + $"&appid={appId}"
+                  + "&l=ukrainian&format=json";
 
-    public Task<IReadOnlyDictionary<string, double>> GetGlobalAchievementPercentagesAsync(
+        // 403 — профіль або деталі ігор приховані.
+        // 400 — тіло з поясненням: "no stats" означає гру без ачівок, решта — справжня помилка.
+        var envelope = await GetJsonAsync<GetPlayerAchievementsEnvelope>(
+            url, ct, nullOnStatus: HttpStatusCode.Forbidden, readBodyOnStatus: HttpStatusCode.BadRequest);
+        if (envelope is null)
+            return null;
+
+        var stats = envelope.PlayerStats
+                    ?? throw new SteamApiException("Steam API повернув некоректну відповідь.");
+
+        if (!stats.Success)
+        {
+            if (IsNoStatsError(stats.Error))
+                return Array.Empty<PlayerAchievement>();
+
+            // success: false з кодом 200 Steam теж повертає для закритих профілів
+            if (IsNotPublicError(stats.Error))
+                return null;
+
+            throw new SteamApiException($"Steam API повернув помилку: {stats.Error ?? "невідома"}.");
+        }
+
+        // Статистика є, але ачівок у гри немає — поля achievements просто нема
+        return stats.Achievements?
+                   .Where(a => !string.IsNullOrEmpty(a.ApiName))
+                   .Select(ToAchievement)
+                   .ToList()
+               ?? (IReadOnlyList<PlayerAchievement>)Array.Empty<PlayerAchievement>();
+    }
+
+    public async Task<IReadOnlyDictionary<string, double>> GetGlobalAchievementPercentagesAsync(
         int appId, CancellationToken ct = default)
-        => throw new NotImplementedException();
+    {
+        // Публічний метод: ключ не потрібен
+        var url = $"{BaseUrl}/ISteamUserStats/GetGlobalAchievementPercentagesForApp/v2/"
+                  + $"?gameid={appId}&format=json";
+
+        var envelope = await GetJsonAsync<GlobalPercentagesEnvelope>(url, ct);
+
+        var result = new Dictionary<string, double>(StringComparer.Ordinal);
+        foreach (var a in envelope?.AchievementPercentages?.Achievements ?? Enumerable.Empty<GlobalPercentageDto>())
+        {
+            if (!string.IsNullOrEmpty(a.Name))
+                result[a.Name] = a.Percent;
+        }
+
+        return result;
+    }
 
     // Один шлях для всіх запитів: мережа / не-2xx / таймаут / битий JSON → SteamApiException.
     // nullOnStatus — код, який для конкретного методу означає "даних немає", а не помилку.
+    // readBodyOnStatus — не-2xx код, тіло якого все одно треба розібрати (Steam пояснює в ньому причину).
     private async Task<T?> GetJsonAsync<T>(
-        string url, CancellationToken ct, HttpStatusCode? nullOnStatus = null) where T : class
+        string url,
+        CancellationToken ct,
+        HttpStatusCode? nullOnStatus = null,
+        HttpStatusCode? readBodyOnStatus = null) where T : class
     {
         try
         {
@@ -130,7 +183,8 @@ public class SteamApiClient : ISteamApiClient
             if (nullOnStatus is not null && response.StatusCode == nullOnStatus)
                 return null;
 
-            response.EnsureSuccessStatusCode();
+            if (readBodyOnStatus is null || response.StatusCode != readBodyOnStatus)
+                response.EnsureSuccessStatusCode();
             return await response.Content.ReadFromJsonAsync<T>(ct);
         }
         catch (HttpRequestException ex)
@@ -185,5 +239,21 @@ public class SteamApiClient : ISteamApiClient
             : null,
         IconUrl: string.IsNullOrEmpty(d.ImgIconUrl)
             ? string.Empty
-            : $"{IconBaseUrl}/{d.AppId}/{d.ImgIconUrl}.jpg");
+            : $"{IconBaseUrl}/{d.AppId}/{d.ImgIconUrl}.jpg",
+        HasCommunityVisibleStats: d.HasCommunityVisibleStats ?? false);
+
+    private static PlayerAchievement ToAchievement(PlayerAchievementDto a) => new(
+        ApiName: a.ApiName!,
+        DisplayName: string.IsNullOrEmpty(a.Name) ? a.ApiName! : a.Name,
+        Description: string.IsNullOrEmpty(a.Description) ? null : a.Description,
+        Achieved: a.Achieved != 0,
+        UnlockTime: a.Achieved != 0 && a.UnlockTime > 0
+            ? DateTimeOffset.FromUnixTimeSeconds(a.UnlockTime)
+            : null);
+
+    private static bool IsNoStatsError(string? error) =>
+        error?.Contains("no stats", StringComparison.OrdinalIgnoreCase) == true;
+
+    private static bool IsNotPublicError(string? error) =>
+        error?.Contains("not public", StringComparison.OrdinalIgnoreCase) == true;
 }

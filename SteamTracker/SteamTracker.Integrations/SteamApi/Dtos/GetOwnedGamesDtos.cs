@@ -36,4 +36,8 @@ internal class OwnedGameDto
 
     [JsonPropertyName("rtime_last_played")]
     public long RtimeLastPlayed { get; set; }
+
+    // Поле є лише в іграх зі статистикою/ачівками
+    [JsonPropertyName("has_community_visible_stats")]
+    public bool? HasCommunityVisibleStats { get; set; }
 }
