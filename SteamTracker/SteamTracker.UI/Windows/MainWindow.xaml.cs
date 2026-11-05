@@ -25,6 +25,9 @@ namespace SteamTracker.UI.Windows
             ShowUser(_auth.CurrentUser);
             _auth.CurrentUserChanged += Auth_CurrentUserChanged;
 
+            // Екрани просять перейти на інший екран через Navigation.Request (напр. картка друзів на Головній)
+            MainContent.AddHandler(Navigation.RequestedEvent, new NavigationRequestedEventHandler(Navigation_Requested));
+
             HomeNavItem.IsChecked = true;
         }
 
@@ -83,6 +86,17 @@ namespace SteamTracker.UI.Windows
             LogoutButton.IsEnabled = false;
             // Після виходу App отримає CurrentUserChanged і поверне на екран входу
             await _auth.LogoutAsync();
+        }
+
+        // Відмічаємо пункт меню з потрібним Tag — далі все робить NavItem_Checked, і меню показує правильний пункт
+        private void Navigation_Requested(object sender, NavigationRequestedEventArgs e)
+        {
+            var item = NavPanel.Children.OfType<RadioButton>().FirstOrDefault(r => Equals(r.Tag, e.Screen));
+            if (item is not null)
+            {
+                item.IsChecked = true;
+                e.Handled = true;
+            }
         }
 
         // Спільний обробник для всіх пунктів меню: Tag пункту визначає, який екран показати

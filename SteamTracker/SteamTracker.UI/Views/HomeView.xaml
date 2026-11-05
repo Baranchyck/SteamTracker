@@ -1,12 +1,112 @@
+<!-- Головний екран: короткий огляд акаунту з даних, які вже є (issue #89, quick wins зі специфікації, розділ 7).
+     Три незалежні блоки: акаунт, друзі, бібліотека. Падіння одного джерела не ховає решту екрана -->
 <UserControl x:Class="SteamTracker.UI.Views.HomeView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <StackPanel>
-        <TextBlock Text="Головна" Style="{StaticResource Title}" />
-        <TextBlock Text="Короткий огляд твого Steam-акаунту" Style="{StaticResource Muted}" Margin="0,4,0,24" />
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:SteamTracker.UI.Controls">
 
-        <Border Style="{StaticResource Card}">
-            <TextBlock Text="Екран у розробці" Style="{StaticResource Muted}" />
-        </Border>
-    </StackPanel>
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel>
+            <TextBlock Text="Головна" Style="{StaticResource Title}" />
+            <TextBlock Text="Короткий огляд твого Steam-акаунту" Style="{StaticResource Muted}" Margin="0,4,0,20" />
+
+            <!-- Акаунт і друзі -->
+            <Grid Margin="0,0,0,20">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="16" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <!-- Вік акаунту: дані з поточного користувача, без запитів -->
+                <Border Grid.Column="0" Style="{StaticResource SectionCard}">
+                    <StackPanel>
+                        <DockPanel>
+                            <Border x:Name="AccountBadgeBorder" DockPanel.Dock="Right" Style="{StaticResource Badge}"
+                                    VerticalAlignment="Top" Visibility="Collapsed">
+                                <TextBlock x:Name="AccountBadgeText" FontSize="12" FontWeight="Medium" />
+                            </Border>
+                            <TextBlock Text="У Steam" Style="{StaticResource StatLabel}" />
+                        </DockPanel>
+                        <TextBlock x:Name="AccountAgeText" Style="{StaticResource StatValue}" />
+                        <TextBlock x:Name="AccountSinceText" Style="{StaticResource StatCaption}" />
+                    </StackPanel>
+                </Border>
+
+                <!-- Друзі онлайн: окремий запит, свій стан -->
+                <Grid Grid.Column="2">
+                    <Border x:Name="FriendsCard" Style="{StaticResource SectionCard}" Visibility="Collapsed">
+                        <StackPanel>
+                            <DockPanel>
+                                <Button x:Name="OpenRadarButton" DockPanel.Dock="Right" Content="Відкрити радар"
+                                        Style="{StaticResource SecondaryButton}" VerticalAlignment="Top"
+                                        Click="OpenRadarButton_Click" />
+                                <TextBlock Text="Друзі онлайн зараз" Style="{StaticResource StatLabel}" />
+                            </DockPanel>
+                            <TextBlock x:Name="FriendsOnlineText" Style="{StaticResource StatValue}" Foreground="{StaticResource Success}" />
+                            <TextBlock x:Name="FriendsCaptionText" Style="{StaticResource StatCaption}" />
+                        </StackPanel>
+                    </Border>
+
+                    <controls:StateView x:Name="FriendsState" HorizontalAlignment="Left" />
+                </Grid>
+            </Grid>
+
+            <!-- Бібліотека -->
+            <DockPanel Margin="0,0,0,12">
+                <Button DockPanel.Dock="Right" Content="Уся бібліотека" Style="{StaticResource SecondaryButton}"
+                        VerticalAlignment="Center" Click="OpenLibraryButton_Click" />
+                <TextBlock Text="Бібліотека" Style="{StaticResource Heading}" FontSize="16" VerticalAlignment="Center" />
+            </DockPanel>
+
+            <Grid>
+                <Grid x:Name="LibraryCards" Visibility="Collapsed">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="16" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="16" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="16" />
+                        <ColumnDefinition Width="1.4*" />
+                    </Grid.ColumnDefinitions>
+
+                    <Border Grid.Column="0" Style="{StaticResource SectionCard}">
+                        <StackPanel>
+                            <TextBlock Text="Ігор" Style="{StaticResource StatLabel}" />
+                            <TextBlock x:Name="GamesCountText" Style="{StaticResource StatValue}" />
+                            <TextBlock Text="у бібліотеці" Style="{StaticResource StatCaption}" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border Grid.Column="2" Style="{StaticResource SectionCard}">
+                        <StackPanel>
+                            <TextBlock Text="Усього годин" Style="{StaticResource StatLabel}" />
+                            <TextBlock x:Name="TotalHoursText" Style="{StaticResource StatValue}" Foreground="{StaticResource Accent}" />
+                            <TextBlock Text="за весь час" Style="{StaticResource StatCaption}" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border Grid.Column="4" Style="{StaticResource SectionCard}">
+                        <StackPanel>
+                            <TextBlock Text="Не запускались" Style="{StaticResource StatLabel}" />
+                            <TextBlock x:Name="NeverPlayedText" Style="{StaticResource StatValue}" Foreground="{StaticResource Warning}" />
+                            <TextBlock Text="жодного разу" Style="{StaticResource StatCaption}" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border Grid.Column="6" Style="{StaticResource SectionCard}">
+                        <StackPanel>
+                            <TextBlock Text="Найдовше не запускана" Style="{StaticResource StatLabel}" />
+                            <TextBlock x:Name="OldestGameText" Style="{StaticResource StatValue}" FontSize="18"
+                                       Margin="0,12,0,8" TextTrimming="CharacterEllipsis" />
+                            <TextBlock x:Name="OldestGameCaption" Style="{StaticResource StatCaption}" />
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <controls:StateView x:Name="LibraryState" HorizontalAlignment="Left" />
+            </Grid>
+        </StackPanel>
+    </ScrollViewer>
 </UserControl>
