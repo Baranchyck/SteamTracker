@@ -13,7 +13,11 @@ namespace SteamTracker.UI.Converters
     {
         public object? Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            if (value is not string url || !Uri.TryCreate(url, UriKind.Absolute, out var uri))
+            // Лише http(s): URL іконок приходить зі Steam, а file:// чи інша схема не повинні ні читати диск,
+            // ні кидати виняток із біндингу (BitmapImage для неіснуючого файлу падає на EndInit)
+            if (value is not string url
+                || !Uri.TryCreate(url, UriKind.Absolute, out var uri)
+                || (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
             {
                 return null;
             }

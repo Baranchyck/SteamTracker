@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Windows.Media;
 using SteamTracker.Domain.Models;
 
@@ -70,7 +71,11 @@ namespace SteamTracker.UI.Views.FriendsRadar
         public static Brush AvatarBrush(string steamId) =>
             AvatarPalette[(int)((ulong.TryParse(steamId, out var id) ? id : (ulong)steamId.Length) % (ulong)AvatarPalette.Length)];
 
-        public static string Initial(string name) => string.IsNullOrEmpty(name) ? "?" : name[..1].ToUpperInvariant();
+        // Перший «символ» за текстовими елементами, а не name[..1]: емодзі в нікові — це дві UTF-16 одиниці,
+        // а розрізаний навпіл суррогат показується як «?»
+        public static string Initial(string name) => string.IsNullOrEmpty(name)
+            ? "?"
+            : new StringInfo(name).SubstringByTextElements(0, 1).ToUpperInvariant();
 
         private static Brush Freeze(string hex)
         {
