@@ -1,7 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <!-- windows: тести UI (форматування, IconUrlConverter, фейки) посилаються на WPF-проєкт -->
+    <TargetFramework>net8.0-windows</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
 
@@ -23,6 +24,7 @@
     <ProjectReference Include="..\SteamTracker.Domain\SteamTracker.Domain.csproj" />
     <ProjectReference Include="..\SteamTracker.Integrations\SteamTracker.Integrations.csproj" />
     <ProjectReference Include="..\SteamTracker.Services\SteamTracker.Services.csproj" />
+    <ProjectReference Include="..\SteamTracker.UI\SteamTracker.UI.csproj" />
   </ItemGroup>
 
   <ItemGroup>
