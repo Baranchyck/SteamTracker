@@ -28,7 +28,12 @@ namespace SteamTracker.UI.Views.Achievements
             int lastTwo = count % 100;
             int last = count % 10;
 
-            string word = last is >= 1 and <= 4 && lastTwo is < 12 or > 14 ? "досягнення" : "досягнень";
+            // 11–14 — завжди «досягнень», навіть коли остання цифра 1–4 (11, 111, 212…)
+            string word = (last, lastTwo) switch
+            {
+                (>= 1 and <= 4, < 11 or > 14) => "досягнення",
+                _ => "досягнень"
+            };
             return $"{count} {word}";
         }
     }

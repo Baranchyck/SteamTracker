@@ -31,9 +31,11 @@ namespace SteamTracker.UI.Views.Comparison
         private static readonly CultureInfo Uk = CultureInfo.GetCultureInfo("uk-UA");
 
         /// <summary>Цілі години, як у макеті («212 год»); менше години — хвилини («30 хв»).</summary>
-        public static string Hours(double minutes) => minutes is > 0 and < 60
-            ? $"{minutes.ToString("N0", Uk)} хв"
-            : $"{(minutes / 60).ToString("N0", Uk)} год";
+        public static string Hours(double minutes) =>
+            // 59,5 хв після округлення — вже година, а не «60 хв»
+            minutes > 0 && Math.Round(minutes, MidpointRounding.AwayFromZero) < 60
+                ? $"{minutes.ToString("N0", Uk)} хв"
+                : $"{(minutes / 60).ToString("N0", Uk)} год";
 
         public static string Percent(decimal percent) => percent.ToString("N0", Uk) + "%";
 
