@@ -143,8 +143,10 @@ public class AchievementService : IAchievementService
             throw new ArgumentOutOfRangeException(nameof(targetPointsUp), "Кількість пунктів не може бути від'ємною.");
 
         // +N пунктів = N% від загальної кількості ачівок; дробову ачівку не закриєш, тому вгору
-        int needed = (int)Math.Ceiling(targetPointsUp * plan.Total / 100m);
-        int take = Math.Min(needed, plan.Remaining.Count);
+        // Множимо вже в decimal: у int добуток переповнюється при великому N (#124).
+        // Обрізаємо до Remaining.Count ще в decimal — тоді каст в int завжди безпечний
+        decimal needed = Math.Ceiling((decimal)targetPointsUp * plan.Total / 100m);
+        int take = (int)Math.Min(needed, plan.Remaining.Count);
 
         // Remaining уже відсортований від найлегших, але план міг прийти не з GetPlanAsync
         var picked = SortByEase(plan.Remaining).Take(take).ToList();

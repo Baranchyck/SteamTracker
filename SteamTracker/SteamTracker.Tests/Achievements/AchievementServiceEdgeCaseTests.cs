@@ -124,8 +124,8 @@ public class AchievementServiceEdgeCaseTests
     }
 
     // Знайдено в #98: targetPointsUp * plan.Total множиться в int і переповнюється ще до ділення в decimal,
-    // тож при великому N план мовчки порожній замість "усі ачівки, 100%". Прибрати Skip після виправлення #124
-    [Fact(Skip = "Баг #124: переповнення int у AchievementService.BuildRoadmap при великому targetPointsUp")]
+    // тож при великому N план мовчки порожній замість "усі ачівки, 100%". Виправлено в #124
+    [Fact]
     public void BuildRoadmap_HugeTarget_TakesAllWithoutOverflow()
     {
         // Екран обмежує ввід (MaxLength = 3), але BuildRoadmap — публічний контракт IAchievementService
