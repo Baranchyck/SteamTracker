@@ -5,7 +5,9 @@ namespace SteamTracker.Domain.Abstractions;
 public interface ISteamApiClient
 {
     Task<SteamProfile?> GetPlayerSummaryAsync(string steamId, CancellationToken ct = default);
-    Task<IReadOnlyList<OwnedGame>> GetOwnedGamesAsync(string steamId, CancellationToken ct = default);
+
+    // null — бібліотека прихована налаштуваннями приватності; порожній список — ігор немає.
+    Task<IReadOnlyList<OwnedGame>?> GetOwnedGamesAsync(string steamId, CancellationToken ct = default);
 
     // SteamID64 друзів. null — список друзів закритий налаштуваннями приватності.
     Task<IReadOnlyList<string>?> GetFriendIdsAsync(string steamId, CancellationToken ct = default);

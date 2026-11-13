@@ -46,7 +46,7 @@ public class SteamApiClient : ISteamApiClient
                 : null);
     }
 
-    public async Task<IReadOnlyList<OwnedGame>> GetOwnedGamesAsync(
+    public async Task<IReadOnlyList<OwnedGame>?> GetOwnedGamesAsync(
         string steamId, CancellationToken ct = default)
     {
         var url = $"{BaseUrl}/IPlayerService/GetOwnedGames/v1/"
@@ -56,10 +56,11 @@ public class SteamApiClient : ISteamApiClient
 
         var envelope = await GetJsonAsync<GetOwnedGamesEnvelope>(url, ct);
 
-        // Закритий профіль: "response": {} без game_count і games.
-        // TODO(#93): тут має бути null, а не порожній список
-        var games = envelope?.Response?.Games;
-        if (envelope?.Response?.GameCount is null || games is null)
+        if (envelope?.Response?.GameCount is null)
+            return null;
+
+        var games = envelope.Response.Games;
+        if (games is null)
             return Array.Empty<OwnedGame>();
 
         return games.Select(ToDomain).ToList();

@@ -45,15 +45,64 @@ public class LibraryServiceTests
             Times.Never);
     }
 
-    [Fact]
-    public async Task GetMyLibraryAsync_EmptyList_ReturnsPrivate()
+    private void SetupLoggedInUserWithHiddenLibrary()
     {
-        SetupLoggedInUserWithGames();
+        var user = User();
+        _auth.Setup(a => a.CurrentUser).Returns(user);
+        _steamApi
+            .Setup(s => s.GetOwnedGamesAsync(user.SteamId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((IReadOnlyList<OwnedGame>?)null);
+    }
+
+    [Fact]
+    public async Task GetMyLibraryAsync_HiddenLibrary_ReturnsPrivate()
+    {
+        SetupLoggedInUserWithHiddenLibrary();
 
         var result = await CreateService().GetMyLibraryAsync(new LibraryFilter());
 
         Assert.Equal(DataStatus.Private, result.Status);
         Assert.Null(result.Value);
+        Assert.NotNull(result.Message);
+    }
+
+    [Fact]
+    public async Task GetMyLibraryAsync_EmptyLibrary_ReturnsAvailableEmpty()
+    {
+        SetupLoggedInUserWithGames();
+
+        var result = await CreateService().GetMyLibraryAsync(new LibraryFilter());
+
+        Assert.Equal(DataStatus.Available, result.Status);
+        Assert.NotNull(result.Value);
+        Assert.Empty(result.Value!);
+    }
+
+    [Fact]
+    public async Task GetMyLibraryAsync_HiddenLibrary_NotCached()
+    {
+        SetupLoggedInUserWithHiddenLibrary();
+        var service = CreateService();
+
+        await service.GetMyLibraryAsync(new LibraryFilter());
+        await service.GetMyLibraryAsync(new LibraryFilter());
+
+        _steamApi.Verify(
+            s => s.GetOwnedGamesAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            Times.Exactly(2));
+    }
+
+    [Fact]
+    public async Task GetMyLibraryAsync_Cancelled_ThrowsInsteadOfError()
+    {
+        var user = User();
+        _auth.Setup(a => a.CurrentUser).Returns(user);
+        _steamApi
+            .Setup(s => s.GetOwnedGamesAsync(user.SteamId, It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new OperationCanceledException());
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(
+            () => CreateService().GetMyLibraryAsync(new LibraryFilter()));
     }
 
     [Fact]
