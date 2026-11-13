@@ -190,7 +190,29 @@ public class SteamApiClientAchievementsTests
 
         var games = await client.GetOwnedGamesAsync(SteamId);
 
-        Assert.True(games.Single(g => g.AppId == 620).HasCommunityVisibleStats);
+        Assert.NotNull(games);
+        Assert.True(games!.Single(g => g.AppId == 620).HasCommunityVisibleStats);
         Assert.False(games.Single(g => g.AppId == 10).HasCommunityVisibleStats);
+    }
+
+    [Fact]
+    public async Task GetOwnedGames_PrivateProfileWithoutGameCount_ReturnsNull()
+    {
+        var (client, _) = Create("""{"response":{}}""");
+
+        var games = await client.GetOwnedGamesAsync(SteamId);
+
+        Assert.Null(games);
+    }
+
+    [Fact]
+    public async Task GetOwnedGames_OpenProfileWithoutGames_ReturnsEmptyNotNull()
+    {
+        var (client, _) = Create("""{"response":{"game_count":0}}""");
+
+        var games = await client.GetOwnedGamesAsync(SteamId);
+
+        Assert.NotNull(games);
+        Assert.Empty(games!);
     }
 }

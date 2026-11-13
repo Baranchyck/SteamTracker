@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.Caching.Memory;
 using SteamTracker.Domain.Abstractions;
-using SteamTracker.Domain.Exceptions;
 using SteamTracker.Domain.Models;
+using SteamTracker.Services.Common;
 
 namespace SteamTracker.Services.Comparison;
 
@@ -27,17 +27,21 @@ public class ComparisonService : IComparisonService
     {
         var user = _auth.CurrentUser;
         if (user is null)
-            return new(null, DataStatus.Error, "Спочатку увійдіть через Steam.");
+            return ServiceCall.NotSignedIn<GameComparison>();
 
-        try
+        return await ServiceCall.RunAsync<GameComparison>(async () =>
         {
-            var userGame = (await GetLibraryAsync(user.SteamId, ct)).FirstOrDefault(g => g.AppId == appId);
+            var userLibrary = await GetLibraryAsync(user.SteamId, ct);
+            if (userLibrary is null)
+                return ServiceCall.Private<GameComparison>("Ваша бібліотека прихована налаштуваннями приватності Steam.");
+
+            var userGame = userLibrary.FirstOrDefault(g => g.AppId == appId);
             if (userGame is null)
-                return new(null, DataStatus.Error, "Цієї гри немає у вашій бібліотеці.");
+                return ServiceCall.Error<GameComparison>("Цієї гри немає у вашій бібліотеці.");
 
             var friendIds = await _steamApi.GetFriendIdsAsync(user.SteamId, ct);
             if (friendIds is null)
-                return new(null, DataStatus.Private, "Список друзів прихований налаштуваннями приватності.");
+                return ServiceCall.Private<GameComparison>("Список друзів прихований налаштуваннями приватності.");
 
             // Неіснуючі SteamID Steam просто не повертає — такі друзі нікуди не потрапляють
             var friends = friendIds.Count == 0
@@ -64,8 +68,7 @@ public class ComparisonService : IComparisonService
 
             foreach (var (friend, library) in friends.Zip(libraries))
             {
-                // TODO(#93): порожній список = прихована бібліотека, поки клієнт не вміє повертати null
-                if (library.Count == 0)
+                if (library is null)
                 {
                     privateLibrary.Add(ToProfile(friend));
                     continue;
@@ -90,21 +93,18 @@ public class ComparisonService : IComparisonService
                 FriendsWithPrivateLibrary: SortByName(privateLibrary));
 
             return new(comparison, DataStatus.Available);
-        }
-        catch (SteamApiException)
-        {
-            return new(null, DataStatus.Error, "Не вдалося отримати дані друзів зі Steam. Спробуйте пізніше.");
-        }
+        }, "Не вдалося отримати дані друзів зі Steam. Спробуйте пізніше.");
     }
 
-    private async Task<IReadOnlyList<OwnedGame>> GetLibraryAsync(string steamId, CancellationToken ct)
+    private async Task<IReadOnlyList<OwnedGame>?> GetLibraryAsync(string steamId, CancellationToken ct)
     {
         var key = $"library:{steamId}";
         if (_cache.TryGetValue(key, out IReadOnlyList<OwnedGame>? cached) && cached is not null)
             return cached;
 
         var library = await _steamApi.GetOwnedGamesAsync(steamId, ct);
-        _cache.Set(key, library, LibraryCacheTtl);
+        if (library is not null)
+            _cache.Set(key, library, LibraryCacheTtl);
         return library;
     }
 

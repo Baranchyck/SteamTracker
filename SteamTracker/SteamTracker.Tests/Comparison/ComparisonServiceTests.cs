@@ -15,8 +15,7 @@ public class ComparisonServiceTests
     private readonly Mock<ISteamApiClient> _steamApi = new();
     private readonly Mock<IAuthService> _auth = new();
 
-    // Бібліотека кожного гравця за SteamID; порожня = прихована
-    private readonly Dictionary<string, IReadOnlyList<OwnedGame>> _libraries = new();
+    private readonly Dictionary<string, IReadOnlyList<OwnedGame>?> _libraries = new();
     private readonly List<string> _friendIds = new();
 
     public ComparisonServiceTests()
@@ -49,6 +48,12 @@ public class ComparisonServiceTests
     {
         _friendIds.Add(name);
         _libraries[name] = games;
+    }
+
+    private void AddHiddenFriend(string name)
+    {
+        _friendIds.Add(name);
+        _libraries[name] = null;
     }
 
     private static IEnumerable<(string, int)> NamesAndRanks(GameComparison c) =>
@@ -89,7 +94,7 @@ public class ComparisonServiceTests
     public async Task GetComparison_PrivateLibrary_InSeparateListNotZeroHours()
     {
         AddFriend("Ann", Game(Portal, 600));
-        AddFriend("Hidden");
+        AddHiddenFriend("Hidden");
 
         var c = (await CreateService().GetComparisonAsync(Portal)).Value!;
 
@@ -113,7 +118,7 @@ public class ComparisonServiceTests
     public async Task GetComparison_NoFriendHasGame_AverageNullWithoutException()
     {
         AddFriend("Ann", Game(Dota, 600));
-        AddFriend("Hidden");
+        AddHiddenFriend("Hidden");
 
         var result = await CreateService().GetComparisonAsync(Portal);
 
@@ -195,6 +200,31 @@ public class ComparisonServiceTests
 
         Assert.Equal(DataStatus.Private, result.Status);
         Assert.NotNull(result.Message);
+    }
+
+    [Fact]
+    public async Task GetComparison_FriendWithEmptyLibrary_InWithoutGameNotPrivate()
+    {
+        AddFriend("Ann", Game(Portal, 600));
+        AddFriend("Empty");
+
+        var c = (await CreateService().GetComparisonAsync(Portal)).Value!;
+
+        Assert.Equal("Empty", Assert.Single(c.FriendsWithoutGame).PersonaName);
+        Assert.Empty(c.FriendsWithPrivateLibrary);
+    }
+
+    [Fact]
+    public async Task GetComparison_UserLibraryHidden_ReturnsPrivateWithoutLoadingFriends()
+    {
+        _libraries[Me] = null;
+        AddFriend("Ann", Game(Portal, 600));
+
+        var result = await CreateService().GetComparisonAsync(Portal);
+
+        Assert.Equal(DataStatus.Private, result.Status);
+        Assert.Null(result.Value);
+        _steamApi.Verify(s => s.GetFriendIdsAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]

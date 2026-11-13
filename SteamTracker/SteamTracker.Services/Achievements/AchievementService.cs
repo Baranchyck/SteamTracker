@@ -2,6 +2,7 @@ using Microsoft.Extensions.Caching.Memory;
 using SteamTracker.Domain.Abstractions;
 using SteamTracker.Domain.Exceptions;
 using SteamTracker.Domain.Models;
+using SteamTracker.Services.Common;
 
 namespace SteamTracker.Services.Achievements;
 
@@ -30,15 +31,14 @@ public class AchievementService : IAchievementService
     {
         var user = _auth.CurrentUser;
         if (user is null)
-            return new(null, DataStatus.Error, "Спочатку увійдіть через Steam.");
+            return ServiceCall.NotSignedIn<IReadOnlyList<AchievementGameProgress>>();
 
-        try
+        return await ServiceCall.RunAsync<IReadOnlyList<AchievementGameProgress>>(async () =>
         {
             var games = await GetOwnedGamesAsync(user.SteamId, ct);
-
-            // TODO(#93): порожній список = приватний профіль, поки клієнт не вміє повертати null
-            if (games.Count == 0)
-                return new(null, DataStatus.Private, "Бібліотека порожня або профіль приватний.");
+            if (games is null)
+                return ServiceCall.Private<IReadOnlyList<AchievementGameProgress>>(
+                    "Бібліотека прихована налаштуваннями приватності Steam.");
 
             // Тільки ігри зі статистикою: для решти Steam однаково відповість "no stats"
             var candidates = games.Where(g => g.HasCommunityVisibleStats).ToList();
@@ -61,7 +61,7 @@ public class AchievementService : IAchievementService
 
             // Деталі ігор закриті для всіх ігор одразу — це налаштування профілю, а не конкретної гри
             if (loaded.All(x => x.Achievements is null))
-                return new(null, DataStatus.Private,
+                return ServiceCall.Private<IReadOnlyList<AchievementGameProgress>>(
                     "Статистика ігор прихована в налаштуваннях приватності Steam.");
 
             var inProgress = loaded
@@ -72,22 +72,18 @@ public class AchievementService : IAchievementService
                 .ThenBy(p => p.Name, StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
-            return new(inProgress, DataStatus.Available);
-        }
-        catch (SteamApiException)
-        {
-            return new(null, DataStatus.Error, "Не вдалося отримати ачівки зі Steam. Спробуйте пізніше.");
-        }
+            return new ServiceResult<IReadOnlyList<AchievementGameProgress>>(inProgress, DataStatus.Available);
+        }, "Не вдалося отримати ачівки зі Steam. Спробуйте пізніше.");
     }
 
     public async Task<ServiceResult<AchievementPlan>> GetPlanAsync(int appId, CancellationToken ct = default)
     {
         var user = _auth.CurrentUser;
         if (user is null)
-            return new(null, DataStatus.Error, "Спочатку увійдіть через Steam.");
+            return ServiceCall.NotSignedIn<AchievementPlan>();
 
         if (appId <= 0)
-            return new(null, DataStatus.Error, "Некоректний ідентифікатор гри.");
+            return ServiceCall.Error<AchievementPlan>("Некоректний ідентифікатор гри.");
 
         IReadOnlyList<PlayerAchievement>? achievements;
         try
@@ -96,11 +92,11 @@ public class AchievementService : IAchievementService
         }
         catch (SteamApiException)
         {
-            return new(null, DataStatus.Error, "Не вдалося отримати ачівки зі Steam. Спробуйте пізніше.");
+            return ServiceCall.Error<AchievementPlan>("Не вдалося отримати ачівки зі Steam. Спробуйте пізніше.");
         }
 
         if (achievements is null)
-            return new(null, DataStatus.Private,
+            return ServiceCall.Private<AchievementPlan>(
                 "Статистика гри прихована в налаштуваннях приватності Steam.");
 
         if (achievements.Count == 0)
@@ -169,14 +165,14 @@ public class AchievementService : IAchievementService
     private static AchievementGameProgress ToProgress(OwnedGame game, IReadOnlyList<PlayerAchievement> achievements) =>
         new(game.AppId, game.Name, game.IconUrl, achievements.Count(a => a.Achieved), achievements.Count);
 
-    private async Task<IReadOnlyList<OwnedGame>> GetOwnedGamesAsync(string steamId, CancellationToken ct)
+    private async Task<IReadOnlyList<OwnedGame>?> GetOwnedGamesAsync(string steamId, CancellationToken ct)
     {
         var key = $"games:{steamId}";
         if (_cache.TryGetValue(key, out IReadOnlyList<OwnedGame>? cached) && cached is not null)
             return cached;
 
         var games = await _steamApi.GetOwnedGamesAsync(steamId, ct);
-        if (games.Count > 0)
+        if (games is not null)
             _cache.Set(key, games, CacheTtl);
         return games;
     }
