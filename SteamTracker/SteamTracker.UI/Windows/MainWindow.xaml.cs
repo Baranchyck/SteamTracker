@@ -2,9 +2,11 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Windows.Threading;
 using SteamTracker.Domain.Abstractions;
 using SteamTracker.Domain.Models;
 using SteamTracker.UI.Views;
+using SteamTracker.UI.Views.Profile;
 
 namespace SteamTracker.UI.Windows
 {
@@ -13,14 +15,25 @@ namespace SteamTracker.UI.Windows
     /// </summary>
     public partial class MainWindow : Window
     {
-        private readonly IAuthService _auth;
-        private readonly ViewFactory _views;
+        // Статус у Steam міняється щохвилини, тож картку оновлюємо періодично, а не лише при вході
+        private static readonly TimeSpan StatusRefreshInterval = TimeSpan.FromMinutes(1);
 
-        public MainWindow(IAuthService auth, ViewFactory views)
+        private readonly IAuthService _auth;
+        private readonly IProfileStatusService _status;
+        private readonly ViewFactory _views;
+        private readonly DispatcherTimer _statusTimer;
+        private CancellationTokenSource? _statusCts;
+
+        public MainWindow(IAuthService auth, IProfileStatusService status, ViewFactory views)
         {
             InitializeComponent();
             _auth = auth;
+            _status = status;
             _views = views;
+
+            _statusTimer = new DispatcherTimer { Interval = StatusRefreshInterval };
+            _statusTimer.Tick += StatusTimer_Tick;
+            _statusTimer.Start();
 
             ShowUser(_auth.CurrentUser);
             _auth.CurrentUserChanged += Auth_CurrentUserChanged;
@@ -34,6 +47,8 @@ namespace SteamTracker.UI.Windows
         protected override void OnClosed(EventArgs e)
         {
             _auth.CurrentUserChanged -= Auth_CurrentUserChanged;
+            _statusTimer.Stop();
+            _statusCts?.Cancel();
             base.OnClosed(e);
         }
 
@@ -55,12 +70,55 @@ namespace SteamTracker.UI.Windows
             AvatarInitial.Text = string.IsNullOrEmpty(user.PersonaName) ? "?" : user.PersonaName[..1].ToUpperInvariant();
             ShowAvatar(user.AvatarUrl);
 
-            (VisibilityText.Text, VisibilityText.Foreground) = user.Visibility switch
+            // Поки статус вантажиться, рядок порожній, щоб не блимав «Публічний профіль» → «Онлайн»
+            StatusText.Text = string.Empty;
+            StatusText.ToolTip = null;
+            StatusDot.Visibility = Visibility.Collapsed;
+            _ = RefreshStatusAsync();
+        }
+
+        private async void StatusTimer_Tick(object? sender, EventArgs e)
+        {
+            await RefreshStatusAsync();
+        }
+
+        // Викликається з UI-потоку (ShowUser, таймер), тож після await ми знову в UI-потоці
+        private async Task RefreshStatusAsync()
+        {
+            var user = _auth.CurrentUser;
+            if (user is null)
             {
-                ProfileVisibility.Public => ("Публічний профіль", (Brush)FindResource("Success")),
-                ProfileVisibility.Limited => ("Обмежений профіль", (Brush)FindResource("TextSecondary")),
-                _ => ("Приватний профіль", (Brush)FindResource("Danger"))
-            };
+                return;
+            }
+
+            // Новий запит скасовує попередній, щоб повільна стара відповідь не перезаписала свіжу
+            _statusCts?.Cancel();
+            var cts = new CancellationTokenSource();
+            _statusCts = cts;
+
+            PlayerPresence? presence;
+            try
+            {
+                presence = await _status.GetCurrentStatusAsync(cts.Token);
+            }
+            catch (OperationCanceledException)
+            {
+                return;
+            }
+
+            // Поки чекали, міг стартувати новіший запит або змінитися користувач
+            if (cts != _statusCts || _auth.CurrentUser?.SteamId != user.SteamId)
+            {
+                return;
+            }
+
+            var (text, brushKey) = ProfileStatusFormat.Of(presence, user.Visibility);
+            var brush = (Brush)FindResource(brushKey);
+            StatusText.Text = text;
+            StatusText.ToolTip = text;
+            StatusText.Foreground = brush;
+            StatusDot.Fill = brush;
+            StatusDot.Visibility = Visibility.Visible;
         }
 
         // Якщо URL порожній або картинка не завантажилась, лишається коло з першою літерою ніка
