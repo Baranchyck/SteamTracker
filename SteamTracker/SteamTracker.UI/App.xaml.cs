@@ -1,9 +1,11 @@
 using System.Windows;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using SteamTracker.DataAccess;
 using SteamTracker.Domain.Abstractions;
 using SteamTracker.Domain.Exceptions;
+using SteamTracker.UI.Logging;
 using SteamTracker.UI.Windows;
 
 namespace SteamTracker.UI
@@ -11,6 +13,8 @@ namespace SteamTracker.UI
     public partial class App : Application
     {
         private ServiceProvider? _provider;
+        private ILoggerFactory? _loggerFactory;
+        private ILogger<App>? _logger;
 
         public IServiceProvider Services => _provider
             ?? throw new InvalidOperationException("Контейнер ще не ініціалізовано.");
@@ -21,10 +25,17 @@ namespace SteamTracker.UI
         {
             base.OnStartup(e);
 
+            var configuration = BuildConfiguration();
+            _loggerFactory = LoggingSetup.CreateLoggerFactory(configuration);
+            var logger = _logger = _loggerFactory.CreateLogger<App>();
+            logger.LogInformation("SteamTracker запущено (fakes: {UseFakes})",
+                configuration.GetValue<bool>(ServiceCollectionExtensions.UseFakesKey));
+
             try
             {
                 _provider = new ServiceCollection()
-                    .AddSteamTracker(BuildConfiguration())
+                    .AddAppLogging(_loggerFactory)
+                    .AddSteamTracker(configuration)
                     .BuildServiceProvider(new ServiceProviderOptions
                     {
                         // Невирішена залежність падає тут, а не при першому кліку в UI.
@@ -34,12 +45,14 @@ namespace SteamTracker.UI
             }
             catch (ConfigurationMissingException ex)
             {
+                // Очікуваний збій налаштування (немає ключа), а не баг — стек не потрібен
+                logger.LogWarning("Конфігурація неповна: {Message}", ex.Message);
                 Fail(ex.Message);
                 return;
             }
             catch (Exception ex)
             {
-                // TODO: залогувати ex (коли з'явиться логер)
+                logger.LogError(ex, "Не вдалося зібрати контейнер залежностей");
                 Fail("Не вдалося зібрати контейнер залежностей.\n" + ex.Message);
                 return;
             }
@@ -50,7 +63,7 @@ namespace SteamTracker.UI
             }
             catch (Exception ex)
             {
-                // TODO: залогувати ex
+                logger.LogError(ex, "Не вдалося ініціалізувати базу даних");
                 Fail("Не вдалося ініціалізувати базу даних.\n" + ex.Message);
                 return;
             }
@@ -71,7 +84,9 @@ namespace SteamTracker.UI
 
         protected override void OnExit(ExitEventArgs e)
         {
+            _logger?.LogInformation("SteamTracker завершено (код {ExitCode})", e.ApplicationExitCode);
             _provider?.Dispose(); // закриває і singleton-и, і HttpClient
+            _loggerFactory?.Dispose(); // останнім: під час Dispose сервіси ще можуть писати в лог
             base.OnExit(e);
         }
 

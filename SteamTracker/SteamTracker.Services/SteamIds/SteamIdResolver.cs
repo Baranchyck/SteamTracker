@@ -1,4 +1,6 @@
 using System.Text.RegularExpressions;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using SteamTracker.Domain.Abstractions;
 using SteamTracker.Domain.Exceptions;
 using SteamTracker.Domain.Models;
@@ -21,10 +23,13 @@ public class SteamIdResolver : ISteamIdResolver
     private static readonly Regex VanityPattern = new("^[A-Za-z0-9_-]{2,32}$", RegexOptions.Compiled);
 
     private readonly ISteamApiClient _steamApi;
+    private readonly ILogger<SteamIdResolver> _logger;
 
-    public SteamIdResolver(ISteamApiClient steamApi)
+    // Логер необов'язковий: у тестах сервіс створюється без нього (NullLogger), DI підставляє справжній
+    public SteamIdResolver(ISteamApiClient steamApi, ILogger<SteamIdResolver>? logger = null)
     {
         _steamApi = steamApi;
+        _logger = logger ?? NullLogger<SteamIdResolver>.Instance;
     }
 
     public async Task<SteamIdResolveResult> ResolveAsync(string input, CancellationToken ct = default)
@@ -105,8 +110,10 @@ public class SteamIdResolver : ISteamIdResolver
                 // Екранування — у клієнті (Uri.EscapeDataString), а шаблон вище вже відсікає зайве
                 steamId = await _steamApi.ResolveVanityUrlAsync(vanity, ct);
             }
-            catch (SteamApiException)
+            catch (SteamApiException ex)
             {
+                // Сам нік не пишемо — це введені користувачем дані
+                _logger.LogError(ex, "SteamIdResolver: ResolveVanityURL не відповів");
                 return Fail(SteamIdResolveError.SteamUnavailable, "Steam не відповідає, спробуйте пізніше.");
             }
 
@@ -115,7 +122,10 @@ public class SteamIdResolver : ISteamIdResolver
 
             // Не довіряємо відповіді наосліп: далі цей id піде в інші запити
             if (!IsSteamId64(steamId))
+            {
+                _logger.LogWarning("SteamIdResolver: Steam повернув некоректний SteamID для vanity URL");
                 return Fail(SteamIdResolveError.SteamUnavailable, "Steam повернув некоректний SteamID.");
+            }
 
             return SteamIdResolveResult.Ok(original, steamId);
         }

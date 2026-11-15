@@ -1,4 +1,6 @@
-﻿using SteamTracker.Domain.Abstractions;
+﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
+using SteamTracker.Domain.Abstractions;
 using SteamTracker.Domain.Exceptions;
 using SteamTracker.Domain.Models;
 
@@ -8,11 +10,15 @@ public class FriendsRadarService : IFriendsRadarService
 {
     private readonly ISteamApiClient _steamApi;
     private readonly IAuthService _auth;
+    private readonly ILogger<FriendsRadarService> _logger;
 
-    public FriendsRadarService(ISteamApiClient steamApi, IAuthService auth)
+    // Логер необов'язковий: у тестах сервіс створюється без нього (NullLogger), DI підставляє справжній
+    public FriendsRadarService(
+        ISteamApiClient steamApi, IAuthService auth, ILogger<FriendsRadarService>? logger = null)
     {
         _steamApi = steamApi;
         _auth = auth;
+        _logger = logger ?? NullLogger<FriendsRadarService>.Instance;
     }
 
     public async Task<ServiceResult<IReadOnlyList<PlayerPresence>>> GetFriendsAsync(
@@ -28,7 +34,10 @@ public class FriendsRadarService : IFriendsRadarService
         {
             var friendIds = await _steamApi.GetFriendIdsAsync(user.SteamId, ct);
             if (friendIds is null)
+            {
+                _logger.LogWarning("FriendsRadar: список друзів прихований налаштуваннями приватності");
                 return new(null, DataStatus.Private, "Список друзів прихований налаштуваннями приватності.");
+            }
 
             // Друзів немає — це не помилка, а просто порожній радар
             if (friendIds.Count == 0)
@@ -47,8 +56,9 @@ public class FriendsRadarService : IFriendsRadarService
 
             return new(sorted, DataStatus.Available);
         }
-        catch (SteamApiException)
+        catch (SteamApiException ex)
         {
+            _logger.LogError(ex, "FriendsRadar: не вдалося отримати список друзів зі Steam");
             return new(null, DataStatus.Error, "Не вдалося отримати список друзів зі Steam. Спробуйте пізніше.");
         }
     }

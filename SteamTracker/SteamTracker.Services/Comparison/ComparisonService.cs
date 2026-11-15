@@ -1,4 +1,6 @@
 ﻿using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using SteamTracker.Domain.Abstractions;
 using SteamTracker.Domain.Exceptions;
 using SteamTracker.Domain.Models;
@@ -15,12 +17,16 @@ public class ComparisonService : IComparisonService
 
     private readonly ISteamApiClient _steamApi;
     private readonly IAuthService _auth;
+    private readonly ILogger<ComparisonService> _logger;
     private readonly MemoryCache _cache = new(new MemoryCacheOptions());
 
-    public ComparisonService(ISteamApiClient steamApi, IAuthService auth)
+    // Логер необов'язковий: у тестах сервіс створюється без нього (NullLogger), DI підставляє справжній
+    public ComparisonService(
+        ISteamApiClient steamApi, IAuthService auth, ILogger<ComparisonService>? logger = null)
     {
         _steamApi = steamApi;
         _auth = auth;
+        _logger = logger ?? NullLogger<ComparisonService>.Instance;
     }
 
     public async Task<ServiceResult<GameComparison>> GetComparisonAsync(int appId, CancellationToken ct = default)
@@ -37,7 +43,10 @@ public class ComparisonService : IComparisonService
 
             var friendIds = await _steamApi.GetFriendIdsAsync(user.SteamId, ct);
             if (friendIds is null)
+            {
+                _logger.LogWarning("Comparison: список друзів прихований налаштуваннями приватності");
                 return new(null, DataStatus.Private, "Список друзів прихований налаштуваннями приватності.");
+            }
 
             // Неіснуючі SteamID Steam просто не повертає — такі друзі нікуди не потрапляють
             var friends = friendIds.Count == 0
@@ -78,6 +87,10 @@ public class ComparisonService : IComparisonService
                     entries.Add(ToEntry(friend.SteamId, friend.PersonaName, friend.AvatarUrl, game, isUser: false));
             }
 
+            if (privateLibrary.Count > 0)
+                _logger.LogWarning("Comparison: у {Count} друзів бібліотека прихована (appId {AppId})",
+                    privateLibrary.Count, appId);
+
             var ranking = Rank(entries);
 
             var comparison = new GameComparison(
@@ -91,8 +104,9 @@ public class ComparisonService : IComparisonService
 
             return new(comparison, DataStatus.Available);
         }
-        catch (SteamApiException)
+        catch (SteamApiException ex)
         {
+            _logger.LogError(ex, "Comparison: не вдалося отримати дані друзів зі Steam (appId {AppId})", appId);
             return new(null, DataStatus.Error, "Не вдалося отримати дані друзів зі Steam. Спробуйте пізніше.");
         }
     }

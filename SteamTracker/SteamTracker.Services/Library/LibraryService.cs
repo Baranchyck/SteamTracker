@@ -1,4 +1,6 @@
 ﻿using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using SteamTracker.Domain.Abstractions;
 using SteamTracker.Domain.Exceptions;
 using SteamTracker.Domain.Models;
@@ -11,12 +13,15 @@ public class LibraryService : ILibraryService
 
     private readonly ISteamApiClient _steamApi;
     private readonly IAuthService _auth;
+    private readonly ILogger<LibraryService> _logger;
     private readonly MemoryCache _cache = new(new MemoryCacheOptions());
 
-    public LibraryService(ISteamApiClient steamApi, IAuthService auth)
+    // Логер необов'язковий: у тестах сервіс створюється без нього (NullLogger), DI підставляє справжній
+    public LibraryService(ISteamApiClient steamApi, IAuthService auth, ILogger<LibraryService>? logger = null)
     {
         _steamApi = steamApi;
         _auth = auth;
+        _logger = logger ?? NullLogger<LibraryService>.Instance;
     }
 
     public async Task<ServiceResult<IReadOnlyList<OwnedGame>>> GetMyLibraryAsync(
@@ -34,16 +39,20 @@ public class LibraryService : ILibraryService
             {
                 games = await _steamApi.GetOwnedGamesAsync(user.SteamId, ct);
             }
-            catch (SteamApiException)
+            catch (SteamApiException ex)
             {
+                _logger.LogError(ex, "Library: не вдалося отримати бібліотеку зі Steam");
                 return new(null, DataStatus.Error,
                     "Не вдалося отримати бібліотеку зі Steam. Спробуйте пізніше.");
             }
 
             // TODO(#нова-таска): порожній список = приватний профіль, поки клієнт не вміє повертати null
             if (games.Count == 0)
+            {
+                _logger.LogWarning("Library: бібліотека порожня або прихована налаштуваннями приватності");
                 return new(null, DataStatus.Private,
                     "Бібліотека порожня або профіль приватний.");
+            }
 
             _cache.Set(cacheKey, games, CacheTtl);
         }
