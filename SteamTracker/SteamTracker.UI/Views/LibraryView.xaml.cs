@@ -13,7 +13,6 @@ namespace SteamTracker.UI.Views
     /// </summary>
     public partial class LibraryView : UserControl
     {
-        private const int BarelyPlayedMinutes = 60;
         private const double BarMaxWidth = 110;
 
         private readonly ILibraryService _library;
@@ -146,7 +145,7 @@ namespace SteamTracker.UI.Views
         private void RenderOverview(IReadOnlyList<OwnedGame> allGames)
         {
             var barelyPlayed = allGames
-                .Where(g => g.PlaytimeForeverMinutes < BarelyPlayedMinutes)
+                .Where(g => g.PlaytimeForeverMinutes < LibraryFormat.BarelyPlayedMinutes)
                 .OrderBy(g => g.PlaytimeForeverMinutes)
                 .ThenBy(g => g.Name, StringComparer.CurrentCultureIgnoreCase)
                 .ToList();

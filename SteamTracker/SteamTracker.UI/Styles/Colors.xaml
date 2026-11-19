@@ -9,6 +9,8 @@
 
     <SolidColorBrush x:Key="Accent" Color="#4C9FE6" />
     <SolidColorBrush x:Key="Success" Color="#87BA6F" />
+    <!-- Фон бейджів «+6 год за 2 тижні» -->
+    <SolidColorBrush x:Key="SuccessSoft" Color="#22351F" />
     <SolidColorBrush x:Key="Danger" Color="#E5534B" />
 
     <SolidColorBrush x:Key="NavHover" Color="#18222E" />

@@ -11,9 +11,6 @@
         <converters:IconUrlConverter x:Key="ImageUrl" />
         <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
 
-        <!-- Фон бейджа «+14 год за 2 тижні» з макета -->
-        <SolidColorBrush x:Key="SuccessSoft" Color="#22351F" />
-
         <!-- Аватар: коло з першою літерою, поверх — картинка, якщо завантажилась -->
         <DataTemplate x:Key="Avatar">
             <Grid Width="28" Height="28">

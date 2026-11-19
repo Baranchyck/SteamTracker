@@ -1,20 +1,27 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using System.Windows.Shapes;
 using SteamTracker.Domain.Abstractions;
 using SteamTracker.Domain.Models;
-using SteamTracker.UI.Controls;
+using SteamTracker.UI.Views.FriendsRadar;
 using SteamTracker.UI.Views.Home;
 using SteamTracker.UI.Views.Library;
 
 namespace SteamTracker.UI.Views
 {
     /// <summary>
-    /// Головний екран: вік акаунту, друзі онлайн і коротка статистика бібліотеки.
-    /// Блоки вантажаться паралельно й незалежно: помилка одного джерела показується лише в його блоці.
+    /// Головний екран за макетом «02 · Головна»: привітання, швидка статистика, нещодавні ігри,
+    /// друзі зараз і картки модулів. Бібліотека й друзі вантажаться паралельно й незалежно:
+    /// помилка одного джерела показується банером лише про нього, решта екрана працює.
     /// </summary>
     public partial class HomeView : UserControl
     {
+        private const int MaxRecentGames = 3;
+        private const int MaxFriendsNow = 4;
+
+        private enum BannerKind { Error, Warning }
+
         private readonly ILibraryService _library;
         private readonly IAuthService _auth;
         private readonly IFriendsRadarService _friends;
@@ -41,31 +48,25 @@ namespace SteamTracker.UI.Views
 
         private async void OnLoaded(object sender, RoutedEventArgs e)
         {
-            ShowAccount(_auth.CurrentUser);
-            await Task.WhenAll(LoadLibraryAsync(), LoadFriendsAsync());
+            GreetingText.Text = HomeFormat.Greeting(_auth.CurrentUser?.PersonaName);
+            await RefreshAllAsync();
         }
 
-        // ---------- акаунт ----------
-
-        private void ShowAccount(SteamProfile? user)
+        /// <summary>«Оновити дані»: обидва блоки разом; кнопка вимкнена, поки йдуть запити.</summary>
+        private async Task RefreshAllAsync()
         {
-            if (user?.TimeCreated is not { } created)
+            RefreshButton.IsEnabled = false;
+            try
             {
-                AccountAgeText.Text = "—";
-                AccountSinceText.Text = "Дата реєстрації недоступна: профіль приватний або ще не оновлювався після входу.";
-                AccountBadgeBorder.Visibility = Visibility.Collapsed;
-                return;
+                await Task.WhenAll(LoadLibraryAsync(), LoadFriendsAsync());
             }
-
-            int years = HomeFormat.FullYears(created, DateTimeOffset.Now);
-            AccountAgeText.Text = HomeFormat.Years(years);
-            AccountSinceText.Text = HomeFormat.Since(created);
-
-            var badge = HomeFormat.Badge(years);
-            AccountBadgeBorder.Visibility = badge == AccountBadge.None ? Visibility.Collapsed : Visibility.Visible;
-            AccountBadgeText.Text = badge == AccountBadge.Veteran ? "Ветеран" : "Новачок";
-            AccountBadgeText.Foreground = (Brush)FindResource(badge == AccountBadge.Veteran ? "Success" : "Accent");
+            finally
+            {
+                RefreshButton.IsEnabled = true;
+            }
         }
+
+        private async void RefreshButton_Click(object sender, RoutedEventArgs e) => await RefreshAllAsync();
 
         // ---------- бібліотека ----------
 
@@ -75,8 +76,7 @@ namespace SteamTracker.UI.Views
             var cts = new CancellationTokenSource();
             _libraryCts = cts;
 
-            LibraryCards.Visibility = Visibility.Collapsed;
-            LibraryState.Show(StateKind.Loading, "Завантажуємо бібліотеку…", "Статистика з’явиться за кілька секунд.");
+            ShowLibraryLoading();
 
             try
             {
@@ -89,26 +89,17 @@ namespace SteamTracker.UI.Views
                 switch (result.Status)
                 {
                     case DataStatus.Private:
-                        LibraryState.Show(StateKind.Private, "Бібліотека прихована",
-                            "Steam не віддає список ігор. Відкрий: Steam → Профіль → Налаштування приватності → Game details → Public.",
-                            "Перевірити знову", ReloadLibrary);
+                        ShowLibraryUnavailable(BannerKind.Warning,
+                            "Бібліотека прихована. Відкрий: Steam → Профіль → Налаштування приватності → Game details → Public.",
+                            "Перевірити знову");
                         return;
                     case DataStatus.Error:
-                        ShowLibraryError();
+                        ShowLibraryUnavailable(BannerKind.Error,
+                            "Не вдалося отримати бібліотеку: немає інтернету або Steam не відповідає.", "Повторити");
                         return;
                 }
 
-                var games = result.Value ?? Array.Empty<OwnedGame>();
-                if (games.Count == 0)
-                {
-                    LibraryState.Show(StateKind.Empty, "Бібліотека порожня",
-                        "На акаунті ще немає ігор.", "Оновити", ReloadLibrary);
-                    return;
-                }
-
-                RenderLibrary(games);
-                LibraryState.Hide();
-                LibraryCards.Visibility = Visibility.Visible;
+                RenderLibrary(result.Value ?? Array.Empty<OwnedGame>());
             }
             catch (OperationCanceledException) when (cts.IsCancellationRequested)
             {
@@ -119,7 +110,8 @@ namespace SteamTracker.UI.Views
                 // TODO: залогувати (коли з'явиться логер)
                 if (!cts.IsCancellationRequested)
                 {
-                    ShowLibraryError();
+                    ShowLibraryUnavailable(BannerKind.Error,
+                        "Не вдалося отримати бібліотеку: немає інтернету або Steam не відповідає.", "Повторити");
                 }
             }
             finally
@@ -132,39 +124,67 @@ namespace SteamTracker.UI.Views
             }
         }
 
+        private void ShowLibraryLoading()
+        {
+            LibraryBanner.Visibility = Visibility.Collapsed;
+            GamesCountText.Text = "…";
+            GamesCaptionText.Text = "Завантажуємо бібліотеку…";
+            TotalHoursText.Text = "…";
+            RecentList.ItemsSource = null;
+            ShowRecentStatus("Завантажуємо…");
+        }
+
         private void RenderLibrary(IReadOnlyList<OwnedGame> games)
         {
+            LibraryBanner.Visibility = Visibility.Collapsed;
+
+            int barelyPlayed = HomeFormat.BarelyPlayedCount(games);
             GamesCountText.Text = LibraryFormat.Count(games.Count);
+            GamesCaptionText.Text = games.Count == 0 ? "у бібліотеці поки немає ігор" : HomeFormat.BarelyPlayedCaption(barelyPlayed);
             TotalHoursText.Text = LibraryFormat.TotalHours(games.Sum(g => (long)g.PlaytimeForeverMinutes));
-            NeverPlayedText.Text = LibraryFormat.Count(games.Count(g => g.PlaytimeForeverMinutes == 0));
+            LibraryModuleText.Text = HomeFormat.WaitingForLaunch(barelyPlayed);
 
-            // Серед ігор, які хоч раз запускались; ніколи не запущені рахує сусідня картка
-            var oldest = games
-                .Where(g => g.LastPlayed is not null)
-                .MinBy(g => g.LastPlayed);
+            var recent = HomeFormat.RecentlyPlayed(games, MaxRecentGames)
+                .Select(g => new RecentGameRow(
+                    g.Name,
+                    g.IconUrl,
+                    HomeFormat.TotalPlaytime(g.PlaytimeForeverMinutes),
+                    HomeFormat.RecentPlaytime(g.Playtime2WeeksMinutes)))
+                .ToList();
 
-            if (oldest is null)
+            RecentList.ItemsSource = recent;
+            if (recent.Count > 0)
             {
-                OldestGameText.Text = "—";
-                OldestGameCaption.Text = "Жодна гра ще не запускалась";
+                RecentStatusText.Visibility = Visibility.Collapsed;
             }
             else
             {
-                OldestGameText.Text = oldest.Name;
-                OldestGameText.ToolTip = oldest.Name;
-                OldestGameCaption.Text = LibraryFormat.LastPlayed(oldest.LastPlayed);
+                ShowRecentStatus(games.Count == 0
+                    ? "У бібліотеці немає ігор."
+                    : "За останні 2 тижні ти не запускав жодної гри.");
             }
         }
 
-        private void ShowLibraryError()
+        /// <summary>Бібліотека недоступна: банер з поясненням і кнопкою, у картках — прочерки.</summary>
+        private void ShowLibraryUnavailable(BannerKind kind, string message, string action)
         {
-            LibraryCards.Visibility = Visibility.Collapsed;
-            LibraryState.Show(StateKind.Error, "Не вдалося отримати бібліотеку",
-                "Немає інтернету або Steam не відповідає. Решта екрана працює далі.",
-                "Повторити", ReloadLibrary);
+            ShowBanner(LibraryBanner, LibraryBannerDot, LibraryBannerText, LibraryBannerAction, kind, message, action);
+
+            GamesCountText.Text = "—";
+            GamesCaptionText.Text = "бібліотека недоступна";
+            TotalHoursText.Text = "—";
+            LibraryModuleText.Text = "Усі ігри з сортуванням і фільтрами";
+            RecentList.ItemsSource = null;
+            ShowRecentStatus("Дані бібліотеки недоступні.");
         }
 
-        private async void ReloadLibrary() => await LoadLibraryAsync();
+        private void ShowRecentStatus(string text)
+        {
+            RecentStatusText.Text = text;
+            RecentStatusText.Visibility = Visibility.Visible;
+        }
+
+        private async void LibraryBannerAction_Click(object sender, RoutedEventArgs e) => await LoadLibraryAsync();
 
         // ---------- друзі ----------
 
@@ -174,8 +194,7 @@ namespace SteamTracker.UI.Views
             var cts = new CancellationTokenSource();
             _friendsCts = cts;
 
-            FriendsCard.Visibility = Visibility.Collapsed;
-            FriendsState.Show(StateKind.Loading, "Шукаємо друзів онлайн…", "Це займе кілька секунд.");
+            ShowFriendsLoading();
 
             try
             {
@@ -188,18 +207,17 @@ namespace SteamTracker.UI.Views
                 switch (result.Status)
                 {
                     case DataStatus.Private:
-                        FriendsState.Show(StateKind.Private, "Список друзів прихований",
-                            "Відкрий: Steam → Профіль → Налаштування приватності → Friends list → Public.",
-                            "Перевірити знову", ReloadFriends);
+                        ShowFriendsUnavailable(BannerKind.Warning,
+                            "Список друзів прихований. Відкрий: Steam → Профіль → Налаштування приватності → Friends list → Public.",
+                            "Перевірити знову");
                         return;
                     case DataStatus.Error:
-                        ShowFriendsError();
+                        ShowFriendsUnavailable(BannerKind.Error,
+                            "Не вдалося отримати друзів: немає інтернету або Steam не відповідає.", "Повторити");
                         return;
                 }
 
                 RenderFriends(result.Value ?? Array.Empty<PlayerPresence>());
-                FriendsState.Hide();
-                FriendsCard.Visibility = Visibility.Visible;
             }
             catch (OperationCanceledException) when (cts.IsCancellationRequested)
             {
@@ -210,7 +228,8 @@ namespace SteamTracker.UI.Views
                 // TODO: залогувати (коли з'явиться логер)
                 if (!cts.IsCancellationRequested)
                 {
-                    ShowFriendsError();
+                    ShowFriendsUnavailable(BannerKind.Error,
+                        "Не вдалося отримати друзів: немає інтернету або Steam не відповідає.", "Повторити");
                 }
             }
             finally
@@ -223,31 +242,98 @@ namespace SteamTracker.UI.Views
             }
         }
 
+        private void ShowFriendsLoading()
+        {
+            FriendsBanner.Visibility = Visibility.Collapsed;
+            FriendsOnlineText.Text = "…";
+            FriendsCaptionText.Text = "Шукаємо друзів онлайн…";
+            FriendsNowList.ItemsSource = null;
+            ShowFriendsNowStatus("Завантажуємо…");
+        }
+
         private void RenderFriends(IReadOnlyList<PlayerPresence> friends)
         {
-            int online = friends.Count(f => f.PersonaState != PersonaState.Offline);
-            // Назва гри є і для сторонніх (non-Steam) ігор, де CurrentGameId = null
-            int inGame = friends.Count(f => f.CurrentGameName is not null);
+            FriendsBanner.Visibility = Visibility.Collapsed;
 
-            FriendsOnlineText.Text = LibraryFormat.Count(online);
+            // Сервіс уже впорядкував: у грі → онлайн → відійшли → офлайн, тож перші N — найактивніші
+            var inSteam = friends.Where(HomeFormat.IsInSteam).ToList();
+            int inGame = inSteam.Count(FriendStatus.IsInGame);
+
+            FriendsOnlineText.Text = HomeFormat.OfTotal(inSteam.Count, friends.Count);
             FriendsCaptionText.Text = friends.Count == 0
-                ? "Друзів у Steam поки немає"
-                : $"з {LibraryFormat.Count(friends.Count)} друзів · у грі: {LibraryFormat.Count(inGame)}";
+                ? "друзів у Steam поки немає"
+                : HomeFormat.FriendsBreakdown(inSteam.Count, inGame);
+
+            var rows = inSteam
+                .Take(MaxFriendsNow)
+                .Select(f => new FriendNowRow(
+                    f.PersonaName,
+                    FriendStatus.Initial(f.PersonaName),
+                    f.AvatarUrl,
+                    FriendStatus.AvatarBrush(f.SteamId),
+                    HomeFormat.StatusLine(f),
+                    (Brush)FindResource(FriendStatus.BrushKey(FriendStatus.GroupOf(f)))))
+                .ToList();
+
+            FriendsNowList.ItemsSource = rows;
+            if (rows.Count > 0)
+            {
+                FriendsNowStatusText.Visibility = Visibility.Collapsed;
+            }
+            else
+            {
+                ShowFriendsNowStatus(friends.Count == 0
+                    ? "Друзів у Steam поки немає."
+                    : "Зараз ніхто з друзів не в мережі.");
+            }
         }
 
-        private void ShowFriendsError()
+        /// <summary>Друзі недоступні: банер з поясненням і кнопкою, у картках — прочерки.</summary>
+        private void ShowFriendsUnavailable(BannerKind kind, string message, string action)
         {
-            FriendsCard.Visibility = Visibility.Collapsed;
-            FriendsState.Show(StateKind.Error, "Не вдалося отримати друзів",
-                "Немає інтернету або Steam не відповідає.", "Повторити", ReloadFriends);
+            ShowBanner(FriendsBanner, FriendsBannerDot, FriendsBannerText, FriendsBannerAction, kind, message, action);
+
+            FriendsOnlineText.Text = "—";
+            FriendsCaptionText.Text = "дані про друзів недоступні";
+            FriendsNowList.ItemsSource = null;
+            ShowFriendsNowStatus("Дані про друзів недоступні.");
         }
 
-        private async void ReloadFriends() => await LoadFriendsAsync();
+        private void ShowFriendsNowStatus(string text)
+        {
+            FriendsNowStatusText.Text = text;
+            FriendsNowStatusText.Visibility = Visibility.Visible;
+        }
+
+        private async void FriendsBannerAction_Click(object sender, RoutedEventArgs e) => await LoadFriendsAsync();
+
+        // ---------- банери ----------
+
+        /// <summary>Банер стану, як на матчмейкері: червоний — помилка, жовтий — приховані дані.</summary>
+        private void ShowBanner(Border banner, Ellipse dot, TextBlock text, Button action,
+            BannerKind kind, string message, string actionText)
+        {
+            var foreground = (Brush)FindResource(kind == BannerKind.Error ? "Danger" : "Warning");
+
+            banner.Background = (Brush)FindResource(kind == BannerKind.Error ? "DangerSoft" : "WarningSoft");
+            dot.Fill = foreground;
+            text.Foreground = foreground;
+            text.Text = message;
+            action.Content = actionText + " →";
+            banner.Visibility = Visibility.Visible;
+        }
 
         // ---------- переходи ----------
 
         private void OpenRadarButton_Click(object sender, RoutedEventArgs e) => Navigation.Request(this, "FriendsRadar");
 
-        private void OpenLibraryButton_Click(object sender, RoutedEventArgs e) => Navigation.Request(this, "Library");
+        /// <summary>Клік по будь-якій картці модуля: Tag картки — ключ екрана, як у пункті меню.</summary>
+        private void ModuleCard_Click(object sender, RoutedEventArgs e)
+        {
+            if (e.OriginalSource is Button { Tag: string screen })
+            {
+                Navigation.Request(this, screen);
+            }
+        }
     }
 }

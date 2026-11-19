@@ -38,4 +38,11 @@
         <Setter Property="FontSize" Value="13" />
     </Style>
 
+    <!-- Дрібний підпис групи великими літерами: «МОДУЛІ» на головній -->
+    <Style x:Key="Overline" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="11" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Foreground" Value="{StaticResource TextSecondary}" />
+    </Style>
+
 </ResourceDictionary>

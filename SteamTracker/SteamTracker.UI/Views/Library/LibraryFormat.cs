@@ -10,6 +10,9 @@ namespace SteamTracker.UI.Views.Library
         // uk-UA: «1 204,5» — пробіл між тисячами, кома в дробовій частині; місяці в родовому відмінку
         private static readonly CultureInfo Uk = CultureInfo.GetCultureInfo("uk-UA");
 
+        /// <summary>Поріг «майже не грав»: менше години за весь час. Спільний для бібліотеки й головної.</summary>
+        public const int BarelyPlayedMinutes = 60;
+
         /// <summary>Години з одним знаком після коми: 4260 хв → «71,0 год».</summary>
         public static string Hours(int minutes) => (minutes / 60.0).ToString("N1", Uk) + " год";
 
