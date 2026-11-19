@@ -51,6 +51,10 @@ public class MatchmakerServiceEdgeCaseTests
         _steamApi.Setup(s => s.GetOwnedGamesAsync(steamId, It.IsAny<CancellationToken>())).ReturnsAsync(list);
     }
 
+    private void SetupHiddenLibrary(string steamId) =>
+        _steamApi.Setup(s => s.GetOwnedGamesAsync(steamId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((IReadOnlyList<OwnedGame>?)null);
+
     // count існуючих у Steam SteamID, крім Me, Ann, Bob
     private string[] Friends(int count)
     {
@@ -65,10 +69,9 @@ public class MatchmakerServiceEdgeCaseTests
     [Fact]
     public async Task FindCommonGames_AllLibrariesHidden_AvailableEmptyWithMessage()
     {
-        // TODO(#93): порожній список = прихована бібліотека
-        SetupLibrary(Me);
-        SetupLibrary(Ann);
-        SetupLibrary(Bob);
+        SetupHiddenLibrary(Me);
+        SetupHiddenLibrary(Ann);
+        SetupHiddenLibrary(Bob);
 
         var result = await CreateService().FindCommonGamesAsync(new[] { Ann, Bob });
 
