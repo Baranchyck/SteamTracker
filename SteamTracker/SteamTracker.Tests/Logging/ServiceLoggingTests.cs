@@ -55,7 +55,7 @@ public class ServiceLoggingTests
         var logger = new Mock<ILogger<LibraryService>>();
         auth.Setup(a => a.CurrentUser).Returns(User);
         steamApi.Setup(s => s.GetOwnedGamesAsync(User.SteamId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Array.Empty<OwnedGame>());
+            .ReturnsAsync((IReadOnlyList<OwnedGame>?)null);
 
         var result = await new LibraryService(steamApi.Object, auth.Object, logger.Object)
             .GetMyLibraryAsync(new LibraryFilter());

@@ -42,12 +42,11 @@ public class AchievementService : IAchievementService
         return await ServiceCall.RunAsync<IReadOnlyList<AchievementGameProgress>>(async () =>
         {
             var games = await GetOwnedGamesAsync(user.SteamId, ct);
-
-            // TODO(#93): порожній список = приватний профіль, поки клієнт не вміє повертати null
-            if (games.Count == 0)
+            if (games is null)
             {
-                _logger.LogWarning("Achievements: бібліотека порожня або прихована налаштуваннями приватності");
-                return new(null, DataStatus.Private, "Бібліотека порожня або профіль приватний.");
+                _logger.LogWarning("Achievements: бібліотека прихована налаштуваннями приватності");
+                return ServiceCall.Private<IReadOnlyList<AchievementGameProgress>>(
+                    "Бібліотека прихована налаштуваннями приватності Steam.");
             }
 
             // Тільки ігри зі статистикою: для решти Steam однаково відповість "no stats"
@@ -73,7 +72,7 @@ public class AchievementService : IAchievementService
             if (loaded.All(x => x.Achievements is null))
             {
                 _logger.LogWarning("Achievements: статистика ігор прихована налаштуваннями приватності");
-                return new(null, DataStatus.Private,
+                return ServiceCall.Private<IReadOnlyList<AchievementGameProgress>>(
                     "Статистика ігор прихована в налаштуваннях приватності Steam.");
             }
 
@@ -85,13 +84,9 @@ public class AchievementService : IAchievementService
                 .ThenBy(p => p.Name, StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
-            return new(inProgress, DataStatus.Available);
-        }
-        catch (SteamApiException ex)
-        {
-            _logger.LogError(ex, "Achievements: не вдалося отримати список ігор з ачівками зі Steam");
-            return new(null, DataStatus.Error, "Не вдалося отримати ачівки зі Steam. Спробуйте пізніше.");
-        }
+            return new ServiceResult<IReadOnlyList<AchievementGameProgress>>(inProgress, DataStatus.Available);
+        }, "Не вдалося отримати ачівки зі Steam. Спробуйте пізніше.",
+            _logger, "Achievements: не вдалося отримати список ігор з ачівками зі Steam");
     }
 
     public async Task<ServiceResult<AchievementPlan>> GetPlanAsync(int appId, CancellationToken ct = default)
@@ -111,13 +106,13 @@ public class AchievementService : IAchievementService
         catch (SteamApiException ex)
         {
             _logger.LogError(ex, "Achievements: не вдалося отримати ачівки гри {AppId} зі Steam", appId);
-            return new(null, DataStatus.Error, "Не вдалося отримати ачівки зі Steam. Спробуйте пізніше.");
+            return ServiceCall.Error<AchievementPlan>("Не вдалося отримати ачівки зі Steam. Спробуйте пізніше.");
         }
 
         if (achievements is null)
         {
             _logger.LogWarning("Achievements: статистика гри {AppId} прихована налаштуваннями приватності", appId);
-            return new(null, DataStatus.Private,
+            return ServiceCall.Private<AchievementPlan>(
                 "Статистика гри прихована в налаштуваннях приватності Steam.");
         }
 

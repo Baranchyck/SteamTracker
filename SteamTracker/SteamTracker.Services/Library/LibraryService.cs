@@ -37,28 +37,19 @@ public class LibraryService : ILibraryService
 
         return await ServiceCall.RunAsync<IReadOnlyList<OwnedGame>>(async () =>
         {
-            try
-            {
-                games = await _steamApi.GetOwnedGamesAsync(user.SteamId, ct);
-            }
-            catch (SteamApiException ex)
-            {
-                _logger.LogError(ex, "Library: не вдалося отримати бібліотеку зі Steam");
-                return new(null, DataStatus.Error,
-                    "Не вдалося отримати бібліотеку зі Steam. Спробуйте пізніше.");
-            }
+            var games = await _steamApi.GetOwnedGamesAsync(user.SteamId, ct);
 
-            // TODO(#нова-таска): порожній список = приватний профіль, поки клієнт не вміє повертати null
-            if (games.Count == 0)
+            if (games is null)
             {
-                _logger.LogWarning("Library: бібліотека порожня або прихована налаштуваннями приватності");
-                return new(null, DataStatus.Private,
-                    "Бібліотека порожня або профіль приватний.");
+                _logger.LogWarning("Library: бібліотека прихована налаштуваннями приватності");
+                return ServiceCall.Private<IReadOnlyList<OwnedGame>>(
+                    "Бібліотека прихована налаштуваннями приватності Steam.");
             }
 
             _cache.Set(cacheKey, games, CacheTtl);
             return new(ApplyFilter(games, filter), DataStatus.Available);
-        }, "Не вдалося отримати бібліотеку зі Steam. Спробуйте пізніше.");
+        }, "Не вдалося отримати бібліотеку зі Steam. Спробуйте пізніше.",
+            _logger, "Library: не вдалося отримати бібліотеку зі Steam");
     }
 
     private static IReadOnlyList<OwnedGame> ApplyFilter(

@@ -39,7 +39,10 @@ public class ComparisonService : IComparisonService
         {
             var userLibrary = await GetLibraryAsync(user.SteamId, ct);
             if (userLibrary is null)
+            {
+                _logger.LogWarning("Comparison: бібліотека користувача прихована налаштуваннями приватності");
                 return ServiceCall.Private<GameComparison>("Ваша бібліотека прихована налаштуваннями приватності Steam.");
+            }
 
             var userGame = userLibrary.FirstOrDefault(g => g.AppId == appId);
             if (userGame is null)
@@ -49,7 +52,7 @@ public class ComparisonService : IComparisonService
             if (friendIds is null)
             {
                 _logger.LogWarning("Comparison: список друзів прихований налаштуваннями приватності");
-                return new(null, DataStatus.Private, "Список друзів прихований налаштуваннями приватності.");
+                return ServiceCall.Private<GameComparison>("Список друзів прихований налаштуваннями приватності.");
             }
 
             // Неіснуючі SteamID Steam просто не повертає — такі друзі нікуди не потрапляють
@@ -106,12 +109,8 @@ public class ComparisonService : IComparisonService
                 FriendsWithPrivateLibrary: SortByName(privateLibrary));
 
             return new(comparison, DataStatus.Available);
-        }
-        catch (SteamApiException ex)
-        {
-            _logger.LogError(ex, "Comparison: не вдалося отримати дані друзів зі Steam (appId {AppId})", appId);
-            return new(null, DataStatus.Error, "Не вдалося отримати дані друзів зі Steam. Спробуйте пізніше.");
-        }
+        }, "Не вдалося отримати дані друзів зі Steam. Спробуйте пізніше.",
+            _logger, "Comparison: не вдалося отримати дані друзів зі Steam (appId {AppId})", appId);
     }
 
     private async Task<IReadOnlyList<OwnedGame>?> GetLibraryAsync(string steamId, CancellationToken ct)

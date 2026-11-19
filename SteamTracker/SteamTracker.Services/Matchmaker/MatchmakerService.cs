@@ -118,13 +118,9 @@ public class MatchmakerService : IMatchmakerService
             }
 
             var result = new MatchResult(participants, common, invalid, hidden);
-            return new(result, DataStatus.Available, message);
-        }
-        catch (SteamApiException ex)
-        {
-            _logger.LogError(ex, "Matchmaker: не вдалося отримати дані учасників зі Steam");
-            return new(null, DataStatus.Error, "Не вдалося отримати дані зі Steam. Спробуйте пізніше.");
-        }
+            return new ServiceResult<MatchResult>(result, DataStatus.Available, message);
+        }, "Не вдалося отримати дані зі Steam. Спробуйте пізніше.",
+            _logger, "Matchmaker: не вдалося отримати дані учасників зі Steam");
     }
 
     private static IReadOnlyList<CommonGame> Intersect(
