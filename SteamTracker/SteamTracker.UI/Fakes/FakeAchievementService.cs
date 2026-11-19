@@ -103,8 +103,8 @@ namespace SteamTracker.UI.Fakes
         // Та сама формула, що в AchievementService: +N пунктів = N% від усіх ачівок, округлення вгору
         public RoadmapResult BuildRoadmap(AchievementPlan plan, int targetPointsUp)
         {
-            int needed = (int)Math.Ceiling(targetPointsUp * plan.Total / 100m);
-            var picked = SortByEase(plan.Remaining).Take(Math.Min(needed, plan.Remaining.Count)).ToList();
+            decimal needed = Math.Ceiling((decimal)targetPointsUp * plan.Total / 100m);
+            var picked = SortByEase(plan.Remaining).Take((int)Math.Min(needed, plan.Remaining.Count)).ToList();
             var after = plan with { Achieved = plan.Achieved + picked.Count };
 
             return new RoadmapResult(targetPointsUp, picked, plan.Percent, after.Percent);
