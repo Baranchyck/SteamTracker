@@ -37,10 +37,10 @@ public class MatchmakerServiceTests
                     PersonaState.Online, null, null))
                 .ToList());
 
-        SetupLibrary(Me);
-        SetupLibrary(Ann);
-        SetupLibrary(Bob);
-        SetupLibrary(Cid);
+        SetupHiddenLibrary(Me);
+        SetupHiddenLibrary(Ann);
+        SetupHiddenLibrary(Bob);
+        SetupHiddenLibrary(Cid);
     }
 
     private MatchmakerService CreateService() => new(_steamApi.Object, _auth.Object, _resolver.Object);
@@ -53,6 +53,10 @@ public class MatchmakerServiceTests
         _steamApi.Setup(s => s.GetOwnedGamesAsync(steamId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(list);
     }
+
+    private void SetupHiddenLibrary(string steamId) =>
+        _steamApi.Setup(s => s.GetOwnedGamesAsync(steamId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((IReadOnlyList<OwnedGame>?)null);
 
     [Fact]
     public async Task FindCommonGames_ThreeLibraries_IntersectionSortedByAveragePlaytime()
@@ -90,7 +94,7 @@ public class MatchmakerServiceTests
     {
         SetupLibrary(Me, Game(1, "A", 10), Game(2, "B", 10));
         SetupLibrary(Ann, Game(1, "A", 10));
-        SetupLibrary(Bob); // прихована
+        SetupHiddenLibrary(Bob);
 
         var result = await CreateService().FindCommonGamesAsync(new[] { Ann, Bob });
 
@@ -106,13 +110,28 @@ public class MatchmakerServiceTests
     public async Task FindCommonGames_OnlyOneVisibleLibrary_EmptyListWithMessage()
     {
         SetupLibrary(Me, Game(1, "A", 10));
-        SetupLibrary(Ann);
+        SetupHiddenLibrary(Ann);
 
         var result = await CreateService().FindCommonGamesAsync(new[] { Ann });
 
         Assert.Equal(DataStatus.Available, result.Status);
         Assert.Empty(result.Value!.CommonGames);
         Assert.NotNull(result.Message);
+    }
+
+    [Fact]
+    public async Task FindCommonGames_EmptyLibrary_NotHiddenAndNoCommonGames()
+    {
+        SetupLibrary(Me, Game(1, "A", 10));
+        SetupLibrary(Ann);
+
+        var result = await CreateService().FindCommonGamesAsync(new[] { Ann });
+
+        Assert.Equal(DataStatus.Available, result.Status);
+        Assert.Empty(result.Value!.CommonGames);
+        Assert.Empty(result.Value.HiddenLibraryParticipants);
+        Assert.False(result.Value.Participants.Single(p => p.SteamId == Ann).LibraryHidden);
+        Assert.Null(result.Message);
     }
 
     [Fact]

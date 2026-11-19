@@ -1,6 +1,6 @@
 ﻿using SteamTracker.Domain.Abstractions;
-using SteamTracker.Domain.Exceptions;
 using SteamTracker.Domain.Models;
+using SteamTracker.Services.Common;
 
 namespace SteamTracker.Services.FriendsRadar;
 
@@ -22,13 +22,14 @@ public class FriendsRadarService : IFriendsRadarService
 
         var user = _auth.CurrentUser;
         if (user is null)
-            return new(null, DataStatus.Error, "Спочатку увійдіть через Steam.");
+            return ServiceCall.NotSignedIn<IReadOnlyList<PlayerPresence>>();
 
-        try
+        return await ServiceCall.RunAsync<IReadOnlyList<PlayerPresence>>(async () =>
         {
             var friendIds = await _steamApi.GetFriendIdsAsync(user.SteamId, ct);
             if (friendIds is null)
-                return new(null, DataStatus.Private, "Список друзів прихований налаштуваннями приватності.");
+                return ServiceCall.Private<IReadOnlyList<PlayerPresence>>(
+                    "Список друзів прихований налаштуваннями приватності.");
 
             // Друзів немає — це не помилка, а просто порожній радар
             if (friendIds.Count == 0)
@@ -45,12 +46,8 @@ public class FriendsRadarService : IFriendsRadarService
                 .ThenBy(f => f.PersonaName, StringComparer.CurrentCultureIgnoreCase)
                 .ToList();
 
-            return new(sorted, DataStatus.Available);
-        }
-        catch (SteamApiException)
-        {
-            return new(null, DataStatus.Error, "Не вдалося отримати список друзів зі Steam. Спробуйте пізніше.");
-        }
+            return new ServiceResult<IReadOnlyList<PlayerPresence>>(sorted, DataStatus.Available);
+        }, "Не вдалося отримати список друзів зі Steam. Спробуйте пізніше.");
     }
 
     // Для сторонніх (non-Steam) ігор CurrentGameId == null, але назва гри є — це теж "в грі"
