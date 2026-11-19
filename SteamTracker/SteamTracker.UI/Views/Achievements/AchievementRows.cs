@@ -3,9 +3,8 @@ using System.Windows.Media;
 namespace SteamTracker.UI.Views.Achievements
 {
     /// <summary>Пункт вибору гри: назва і скільки ачівок уже закрито.</summary>
-    public record GameOption(int AppId, string Title)
+    public record GameOption(int AppId, string Title, string IconUrl)
     {
-        // Шаблон SortComboBox показує вибраний пункт через ToString()
         public override string ToString() => Title;
     }
 
