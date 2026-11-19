@@ -14,6 +14,7 @@ using SteamTracker.Services.FriendsRadar;
 using SteamTracker.Services.Library;
 using SteamTracker.Services.Matchmaker;
 using SteamTracker.Services.PricePerHour;
+using SteamTracker.Services.Profile;
 using SteamTracker.Services.SteamIds;
 using SteamTracker.UI.Fakes;
 using SteamTracker.UI.Views;
@@ -43,6 +44,7 @@ public static class ServiceCollectionExtensions
         services.AddSteamIdResolver(useFakes);
         services.AddFriendsRadarFeature(useFakes);
         services.AddComparisonFeature(useFakes);
+        services.AddProfileStatusFeature(useFakes);
 
         services.AddScreens();
         services.AddWindows();
@@ -191,6 +193,19 @@ public static class ServiceCollectionExtensions
         }
 
         services.AddSingleton<IComparisonService, ComparisonService>();
+        return services;
+    }
+
+    // Статус поточного користувача для картки в бічному меню (#133)
+    private static IServiceCollection AddProfileStatusFeature(this IServiceCollection services, bool useFakes)
+    {
+        if (useFakes)
+        {
+            services.AddSingleton<IProfileStatusService, FakeProfileStatusService>();
+            return services;
+        }
+
+        services.AddSingleton<IProfileStatusService, ProfileStatusService>();
         return services;
     }
 

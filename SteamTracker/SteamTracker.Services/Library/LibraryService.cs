@@ -2,8 +2,8 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using SteamTracker.Domain.Abstractions;
-using SteamTracker.Domain.Exceptions;
 using SteamTracker.Domain.Models;
+using SteamTracker.Services.Common;
 
 namespace SteamTracker.Services.Library;
 
@@ -29,11 +29,13 @@ public class LibraryService : ILibraryService
     {
         var user = _auth.CurrentUser;
         if (user is null)
-            return new(null, DataStatus.Error, "Спочатку увійдіть через Steam.");
+            return ServiceCall.NotSignedIn<IReadOnlyList<OwnedGame>>();
 
         var cacheKey = $"library:{user.SteamId}";
+        if (_cache.TryGetValue(cacheKey, out IReadOnlyList<OwnedGame>? cached) && cached is not null)
+            return new(ApplyFilter(cached, filter), DataStatus.Available);
 
-        if (!_cache.TryGetValue(cacheKey, out IReadOnlyList<OwnedGame>? games) || games is null)
+        return await ServiceCall.RunAsync<IReadOnlyList<OwnedGame>>(async () =>
         {
             try
             {
@@ -55,10 +57,10 @@ public class LibraryService : ILibraryService
             }
 
             _cache.Set(cacheKey, games, CacheTtl);
-        }
-
-        return new(ApplyFilter(games, filter), DataStatus.Available);
+            return new(ApplyFilter(games, filter), DataStatus.Available);
+        }, "Не вдалося отримати бібліотеку зі Steam. Спробуйте пізніше.");
     }
+
     private static IReadOnlyList<OwnedGame> ApplyFilter(
     IReadOnlyList<OwnedGame> games, LibraryFilter filter)
     {

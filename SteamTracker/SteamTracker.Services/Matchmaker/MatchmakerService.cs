@@ -1,8 +1,8 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using SteamTracker.Domain.Abstractions;
-using SteamTracker.Domain.Exceptions;
 using SteamTracker.Domain.Models;
+using SteamTracker.Services.Common;
 
 namespace SteamTracker.Services.Matchmaker;
 
@@ -40,16 +40,16 @@ public class MatchmakerService : IMatchmakerService
 
         var user = _auth.CurrentUser;
         if (user is null)
-            return new(null, DataStatus.Error, "Спочатку увійдіть через Steam.");
+            return ServiceCall.NotSignedIn<MatchResult>();
 
         // Порожні рядки — просто незаповнені поля форми, а не помилка вводу
         var inputs = participantInputs.Where(i => !string.IsNullOrWhiteSpace(i)).ToList();
 
         if (inputs.Count > MaxInputs)
-            return new(null, DataStatus.Error,
+            return ServiceCall.Error<MatchResult>(
                 $"Забагато учасників: максимум {IMatchmakerService.MaxParticipants} разом з вами.");
 
-        try
+        return await ServiceCall.RunAsync<MatchResult>(async () =>
         {
             using var throttle = new SemaphoreSlim(MaxParallelRequests);
 
@@ -76,12 +76,12 @@ public class MatchmakerService : IMatchmakerService
             }
 
             if (ids.Count < IMatchmakerService.MinParticipants)
-                return new(null, DataStatus.Error, invalid.Count > 0
+                return ServiceCall.Error<MatchResult>(invalid.Count > 0
                     ? $"Немає жодного іншого учасника: {invalid[0].Message}"
                     : "Додайте хоча б одного учасника.");
 
             if (ids.Count > IMatchmakerService.MaxParticipants)
-                return new(null, DataStatus.Error,
+                return ServiceCall.Error<MatchResult>(
                     $"Забагато учасників: максимум {IMatchmakerService.MaxParticipants} разом з вами.");
 
             var libraries = await RunThrottledAsync(ids, id => _steamApi.GetOwnedGamesAsync(id, ct), throttle, ct);
@@ -90,13 +90,12 @@ public class MatchmakerService : IMatchmakerService
                     id,
                     profiles.GetValueOrDefault(id),
                     user,
-                    // TODO(#93): порожній список = прихована бібліотека, поки клієнт не вміє повертати null
-                    libraryHidden: libraries[i].Count == 0))
+                    libraryHidden: libraries[i] is null))
                 .ToList();
 
             var visible = ids.Zip(libraries)
-                .Where(x => x.Second.Count > 0)
-                .Select(x => (SteamId: x.First, Games: x.Second))
+                .Where(x => x.Second is not null)
+                .Select(x => (SteamId: x.First, Games: x.Second!))
                 .ToList();
 
             var hidden = participants.Where(p => p.LibraryHidden).ToList();

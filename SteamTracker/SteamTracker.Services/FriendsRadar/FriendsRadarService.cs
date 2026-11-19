@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using SteamTracker.Domain.Abstractions;
 using SteamTracker.Domain.Exceptions;
 using SteamTracker.Domain.Models;
+using SteamTracker.Services.Common;
 
 namespace SteamTracker.Services.FriendsRadar;
 
@@ -28,9 +29,9 @@ public class FriendsRadarService : IFriendsRadarService
 
         var user = _auth.CurrentUser;
         if (user is null)
-            return new(null, DataStatus.Error, "Спочатку увійдіть через Steam.");
+            return ServiceCall.NotSignedIn<IReadOnlyList<PlayerPresence>>();
 
-        try
+        return await ServiceCall.RunAsync<IReadOnlyList<PlayerPresence>>(async () =>
         {
             var friendIds = await _steamApi.GetFriendIdsAsync(user.SteamId, ct);
             if (friendIds is null)

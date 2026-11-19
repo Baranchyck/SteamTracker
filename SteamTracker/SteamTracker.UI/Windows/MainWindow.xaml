@@ -32,7 +32,7 @@
                     <TextBlock Text="Steam Tracker" Style="{StaticResource Heading}" VerticalAlignment="Center" Margin="10,0,0,0" />
                 </StackPanel>
 
-                <!-- Картка користувача внизу меню: аватар, нік, видимість профілю, вихід -->
+                <!-- Картка користувача внизу меню: аватар, нік, статус (у грі / онлайн / офлайн), вихід -->
                 <Border DockPanel.Dock="Bottom" Style="{StaticResource Card}" Margin="12" Padding="10">
                     <DockPanel>
                         <Button x:Name="LogoutButton" DockPanel.Dock="Right" Content="Вийти" Style="{StaticResource SecondaryButton}" VerticalAlignment="Center" Click="LogoutButton_Click" />
@@ -47,7 +47,12 @@
 
                         <StackPanel Margin="10,0,0,0" VerticalAlignment="Center">
                             <TextBlock x:Name="UserNameText" TextTrimming="CharacterEllipsis" />
-                            <TextBlock x:Name="VisibilityText" Style="{StaticResource Small}" />
+                            <!-- Назва гри може бути довгою: обрізаємо трикрапкою, повний текст — у підказці (#136) -->
+                            <DockPanel>
+                                <Ellipse x:Name="StatusDot" DockPanel.Dock="Left" Width="6" Height="6" Margin="0,1,5,0"
+                                         VerticalAlignment="Center" Visibility="Collapsed" />
+                                <TextBlock x:Name="StatusText" Style="{StaticResource Small}" TextTrimming="CharacterEllipsis" />
+                            </DockPanel>
                         </StackPanel>
                     </DockPanel>
                 </Border>

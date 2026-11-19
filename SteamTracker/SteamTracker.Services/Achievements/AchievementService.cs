@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using SteamTracker.Domain.Abstractions;
 using SteamTracker.Domain.Exceptions;
 using SteamTracker.Domain.Models;
+using SteamTracker.Services.Common;
 
 namespace SteamTracker.Services.Achievements;
 
@@ -36,9 +37,9 @@ public class AchievementService : IAchievementService
     {
         var user = _auth.CurrentUser;
         if (user is null)
-            return new(null, DataStatus.Error, "Спочатку увійдіть через Steam.");
+            return ServiceCall.NotSignedIn<IReadOnlyList<AchievementGameProgress>>();
 
-        try
+        return await ServiceCall.RunAsync<IReadOnlyList<AchievementGameProgress>>(async () =>
         {
             var games = await GetOwnedGamesAsync(user.SteamId, ct);
 
@@ -97,10 +98,10 @@ public class AchievementService : IAchievementService
     {
         var user = _auth.CurrentUser;
         if (user is null)
-            return new(null, DataStatus.Error, "Спочатку увійдіть через Steam.");
+            return ServiceCall.NotSignedIn<AchievementPlan>();
 
         if (appId <= 0)
-            return new(null, DataStatus.Error, "Некоректний ідентифікатор гри.");
+            return ServiceCall.Error<AchievementPlan>("Некоректний ідентифікатор гри.");
 
         IReadOnlyList<PlayerAchievement>? achievements;
         try
@@ -162,8 +163,10 @@ public class AchievementService : IAchievementService
             throw new ArgumentOutOfRangeException(nameof(targetPointsUp), "Кількість пунктів не може бути від'ємною.");
 
         // +N пунктів = N% від загальної кількості ачівок; дробову ачівку не закриєш, тому вгору
-        int needed = (int)Math.Ceiling(targetPointsUp * plan.Total / 100m);
-        int take = Math.Min(needed, plan.Remaining.Count);
+        // Множимо вже в decimal: у int добуток переповнюється при великому N (#124).
+        // Обрізаємо до Remaining.Count ще в decimal — тоді каст в int завжди безпечний
+        decimal needed = Math.Ceiling((decimal)targetPointsUp * plan.Total / 100m);
+        int take = (int)Math.Min(needed, plan.Remaining.Count);
 
         // Remaining уже відсортований від найлегших, але план міг прийти не з GetPlanAsync
         var picked = SortByEase(plan.Remaining).Take(take).ToList();
@@ -188,14 +191,14 @@ public class AchievementService : IAchievementService
     private static AchievementGameProgress ToProgress(OwnedGame game, IReadOnlyList<PlayerAchievement> achievements) =>
         new(game.AppId, game.Name, game.IconUrl, achievements.Count(a => a.Achieved), achievements.Count);
 
-    private async Task<IReadOnlyList<OwnedGame>> GetOwnedGamesAsync(string steamId, CancellationToken ct)
+    private async Task<IReadOnlyList<OwnedGame>?> GetOwnedGamesAsync(string steamId, CancellationToken ct)
     {
         var key = $"games:{steamId}";
         if (_cache.TryGetValue(key, out IReadOnlyList<OwnedGame>? cached) && cached is not null)
             return cached;
 
         var games = await _steamApi.GetOwnedGamesAsync(steamId, ct);
-        if (games.Count > 0)
+        if (games is not null)
             _cache.Set(key, games, CacheTtl);
         return games;
     }
