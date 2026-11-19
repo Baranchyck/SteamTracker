@@ -246,6 +246,60 @@
         </Setter>
     </Style>
 
+    <!-- Вибір гри: рамка з обкладинкою, назвою і стрілкою, як «Game select» у макеті.
+         Спільний для «Час гри з друзями» і «Досягнення» -->
+    <Style x:Key="GameSelect" TargetType="ComboBox">
+        <Setter Property="Foreground" Value="{StaticResource TextPrimary}" />
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="FontWeight" Value="Medium" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="ItemContainerStyle" Value="{StaticResource SortComboBoxItem}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ComboBox">
+                    <Grid>
+                        <ToggleButton Focusable="False" ClickMode="Press"
+                                      IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}">
+                            <ToggleButton.Template>
+                                <ControlTemplate TargetType="ToggleButton">
+                                    <Border x:Name="Box" Background="{StaticResource Surface}" BorderBrush="{StaticResource Border}"
+                                            BorderThickness="1" CornerRadius="8" />
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="Box" Property="BorderBrush" Value="{StaticResource Accent}" />
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </ToggleButton.Template>
+                        </ToggleButton>
+                        <DockPanel Margin="14,0" IsHitTestVisible="False">
+                            <Path DockPanel.Dock="Right" Data="M4.33013 0L8.66025 5.25H0L4.33013 0Z" Fill="{StaticResource TextSecondary}"
+                                  VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5">
+                                <Path.RenderTransform>
+                                    <RotateTransform Angle="180" />
+                                </Path.RenderTransform>
+                            </Path>
+                            <ContentPresenter Content="{TemplateBinding SelectionBoxItem}"
+                                              ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}" VerticalAlignment="Center" />
+                        </DockPanel>
+                        <Popup IsOpen="{TemplateBinding IsDropDownOpen}" AllowsTransparency="True" Focusable="False"
+                               Placement="Bottom" PopupAnimation="Fade" MinWidth="{TemplateBinding ActualWidth}">
+                            <Border Background="{StaticResource Surface}" BorderBrush="{StaticResource Border}"
+                                    BorderThickness="1" CornerRadius="8" Padding="4" Margin="0,6,0,0">
+                                <ScrollViewer MaxHeight="360" VerticalScrollBarVisibility="Auto">
+                                    <ScrollViewer.Resources>
+                                        <Style TargetType="ScrollBar" BasedOn="{StaticResource ThinScrollBar}" />
+                                    </ScrollViewer.Resources>
+                                    <ItemsPresenter KeyboardNavigation.DirectionalNavigation="Contained" />
+                                </ScrollViewer>
+                            </Border>
+                        </Popup>
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <!-- Рядок списку ігор: без системного виділення, лише підсвітка при наведенні -->
     <Style x:Key="ListRow" TargetType="ListBoxItem">
         <Setter Property="FocusVisualStyle" Value="{x:Null}" />

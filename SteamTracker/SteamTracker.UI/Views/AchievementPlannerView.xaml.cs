@@ -82,7 +82,7 @@ namespace SteamTracker.UI.Views
                 }
 
                 GameBox.ItemsSource = games
-                    .Select(g => new GameOption(g.AppId, $"{g.Name} · {g.Achieved}/{g.Total}"))
+                    .Select(g => new GameOption(g.AppId, $"{g.Name} · {g.Achieved}/{g.Total}", g.IconUrl))
                     .ToList();
                 GameBox.Visibility = Visibility.Visible;
                 // Вибір першої гри запускає завантаження її плану через Game_Changed
