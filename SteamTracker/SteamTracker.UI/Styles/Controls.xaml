@@ -246,6 +246,57 @@
         </Setter>
     </Style>
 
+    <!-- Рядок списку ігор: без системного виділення, лише підсвітка при наведенні -->
+    <Style x:Key="ListRow" TargetType="ListBoxItem">
+        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ListBoxItem">
+                    <Border x:Name="Root" Background="Transparent" CornerRadius="6" Padding="8">
+                        <ContentPresenter />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Root" Property="Background" Value="{StaticResource NavHover}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Тонка темна смуга прокрутки замість системної світлої -->
+    <Style x:Key="ThinScrollBar" TargetType="ScrollBar">
+        <Setter Property="Width" Value="6" />
+        <Setter Property="MinWidth" Value="6" />
+        <Setter Property="Margin" Value="4,0,0,0" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ScrollBar">
+                    <Track x:Name="PART_Track" IsDirectionReversed="True">
+                        <Track.Thumb>
+                            <Thumb>
+                                <Thumb.Template>
+                                    <ControlTemplate TargetType="Thumb">
+                                        <Border x:Name="Bar" Background="{StaticResource TextSecondary}" Opacity="0.35" CornerRadius="3" />
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="Bar" Property="Opacity" Value="0.7" />
+                                            </Trigger>
+                                            <Trigger Property="IsDragging" Value="True">
+                                                <Setter TargetName="Bar" Property="Opacity" Value="0.7" />
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Thumb.Template>
+                            </Thumb>
+                        </Track.Thumb>
+                    </Track>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <!-- Вибір гри: рамка з обкладинкою, назвою і стрілкою, як «Game select» у макеті.
          Спільний для «Час гри з друзями» і «Досягнення» -->
     <Style x:Key="GameSelect" TargetType="ComboBox">
@@ -295,57 +346,6 @@
                             </Border>
                         </Popup>
                     </Grid>
-                </ControlTemplate>
-            </Setter.Value>
-        </Setter>
-    </Style>
-
-    <!-- Рядок списку ігор: без системного виділення, лише підсвітка при наведенні -->
-    <Style x:Key="ListRow" TargetType="ListBoxItem">
-        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
-        <Setter Property="Template">
-            <Setter.Value>
-                <ControlTemplate TargetType="ListBoxItem">
-                    <Border x:Name="Root" Background="Transparent" CornerRadius="6" Padding="8">
-                        <ContentPresenter />
-                    </Border>
-                    <ControlTemplate.Triggers>
-                        <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="Root" Property="Background" Value="{StaticResource NavHover}" />
-                        </Trigger>
-                    </ControlTemplate.Triggers>
-                </ControlTemplate>
-            </Setter.Value>
-        </Setter>
-    </Style>
-
-    <!-- Тонка темна смуга прокрутки замість системної світлої -->
-    <Style x:Key="ThinScrollBar" TargetType="ScrollBar">
-        <Setter Property="Width" Value="6" />
-        <Setter Property="MinWidth" Value="6" />
-        <Setter Property="Margin" Value="4,0,0,0" />
-        <Setter Property="Template">
-            <Setter.Value>
-                <ControlTemplate TargetType="ScrollBar">
-                    <Track x:Name="PART_Track" IsDirectionReversed="True">
-                        <Track.Thumb>
-                            <Thumb>
-                                <Thumb.Template>
-                                    <ControlTemplate TargetType="Thumb">
-                                        <Border x:Name="Bar" Background="{StaticResource TextSecondary}" Opacity="0.35" CornerRadius="3" />
-                                        <ControlTemplate.Triggers>
-                                            <Trigger Property="IsMouseOver" Value="True">
-                                                <Setter TargetName="Bar" Property="Opacity" Value="0.7" />
-                                            </Trigger>
-                                            <Trigger Property="IsDragging" Value="True">
-                                                <Setter TargetName="Bar" Property="Opacity" Value="0.7" />
-                                            </Trigger>
-                                        </ControlTemplate.Triggers>
-                                    </ControlTemplate>
-                                </Thumb.Template>
-                            </Thumb>
-                        </Track.Thumb>
-                    </Track>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
