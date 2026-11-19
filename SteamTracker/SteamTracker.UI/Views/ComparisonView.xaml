@@ -95,7 +95,7 @@
             </Setter>
         </Style>
 
-        <!-- Заголовок картки, що згортає список: «Немає цієї гри  5  ▾» -->
+        <!-- Заголовок картки, що згортає список: «Немає цієї гри  5  −» / «+» -->
         <Style x:Key="CollapseHeader" TargetType="ToggleButton">
             <Setter Property="Foreground" Value="{StaticResource TextPrimary}" />
             <Setter Property="Cursor" Value="Hand" />
@@ -105,25 +105,18 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="ToggleButton">
                         <DockPanel Background="Transparent">
-                            <Path x:Name="Chevron" DockPanel.Dock="Right" Data="M4.33013 0L8.66025 5.25H0L4.33013 0Z"
-                                  Fill="{StaticResource TextSecondary}" VerticalAlignment="Center">
-                                <Path.LayoutTransform>
-                                    <RotateTransform Angle="180" />
-                                </Path.LayoutTransform>
-                            </Path>
+                            <TextBlock x:Name="Sign" DockPanel.Dock="Right" Text="−" FontSize="20" Width="20"
+                                       TextAlignment="Center" VerticalAlignment="Center"
+                                       Foreground="{StaticResource TextSecondary}" />
                             <ContentPresenter VerticalAlignment="Center" />
                         </DockPanel>
                         <ControlTemplate.Triggers>
-                            <!-- Згорнуто — стрілка дивиться вправо -->
+                            <!-- Згорнуто — «+» (розгорнути), розгорнуто — «−» (згорнути) -->
                             <Trigger Property="IsChecked" Value="False">
-                                <Setter TargetName="Chevron" Property="LayoutTransform">
-                                    <Setter.Value>
-                                        <RotateTransform Angle="90" />
-                                    </Setter.Value>
-                                </Setter>
+                                <Setter TargetName="Sign" Property="Text" Value="+" />
                             </Trigger>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Chevron" Property="Fill" Value="{StaticResource TextPrimary}" />
+                                <Setter TargetName="Sign" Property="Foreground" Value="{StaticResource TextPrimary}" />
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
