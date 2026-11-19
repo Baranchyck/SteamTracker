@@ -1,111 +1,228 @@
-<!-- Головний екран: короткий огляд акаунту з даних, які вже є (issue #89, quick wins зі специфікації, розділ 7).
-     Три незалежні блоки: акаунт, друзі, бібліотека. Падіння одного джерела не ховає решту екрана -->
+<!-- Головний екран за макетом Figma «02 · Головна» (issue #145).
+     Два незалежні джерела: бібліотека і друзі. Падіння одного показує банер лише про нього, решта екрана працює -->
 <UserControl x:Class="SteamTracker.UI.Views.HomeView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:controls="clr-namespace:SteamTracker.UI.Controls">
+             xmlns:converters="clr-namespace:SteamTracker.UI.Converters"
+             xmlns:home="clr-namespace:SteamTracker.UI.Views.Home">
+
+    <UserControl.Resources>
+        <converters:IconUrlConverter x:Key="ImageUrl" />
+    </UserControl.Resources>
 
     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-        <StackPanel>
-            <TextBlock Text="Головна" Style="{StaticResource Title}" />
-            <TextBlock Text="Короткий огляд твого Steam-акаунту" Style="{StaticResource Muted}" Margin="0,4,0,20" />
+        <ScrollViewer.Resources>
+            <Style TargetType="ScrollBar" BasedOn="{StaticResource ThinScrollBar}" />
+        </ScrollViewer.Resources>
 
-            <!-- Акаунт і друзі -->
-            <Grid Margin="0,0,0,20">
+        <StackPanel>
+
+            <!-- Шапка: привітання і «Оновити дані» -->
+            <DockPanel Margin="0,0,0,20">
+                <Button x:Name="RefreshButton" DockPanel.Dock="Right" Content="Оновити дані" Style="{StaticResource SecondaryButton}"
+                        FontSize="12" VerticalAlignment="Top" Click="RefreshButton_Click" />
+                <StackPanel>
+                    <TextBlock x:Name="GreetingText" Text="Привіт!" Style="{StaticResource Title}" TextTrimming="CharacterEllipsis" />
+                    <TextBlock Text="Короткий огляд твого Steam-акаунту" Style="{StaticResource Muted}" Margin="0,4,0,0" />
+                </StackPanel>
+            </DockPanel>
+
+            <!-- Банери станів: червоний — помилка, жовтий — приховані дані або порожньо. Кнопка праворуч повторює запит -->
+            <Border x:Name="LibraryBanner" Visibility="Collapsed" CornerRadius="8" Padding="14,10" Margin="0,0,0,12">
+                <DockPanel>
+                    <Button x:Name="LibraryBannerAction" DockPanel.Dock="Right" Style="{StaticResource LinkButton}"
+                            VerticalAlignment="Center" Margin="12,0,0,0" Click="LibraryBannerAction_Click" />
+                    <Ellipse x:Name="LibraryBannerDot" DockPanel.Dock="Left" Width="6" Height="6" VerticalAlignment="Center" Margin="0,0,10,0" />
+                    <TextBlock x:Name="LibraryBannerText" FontSize="13" TextWrapping="Wrap" VerticalAlignment="Center" />
+                </DockPanel>
+            </Border>
+
+            <Border x:Name="FriendsBanner" Visibility="Collapsed" CornerRadius="8" Padding="14,10" Margin="0,0,0,12">
+                <DockPanel>
+                    <Button x:Name="FriendsBannerAction" DockPanel.Dock="Right" Style="{StaticResource LinkButton}"
+                            VerticalAlignment="Center" Margin="12,0,0,0" Click="FriendsBannerAction_Click" />
+                    <Ellipse x:Name="FriendsBannerDot" DockPanel.Dock="Left" Width="6" Height="6" VerticalAlignment="Center" Margin="0,0,10,0" />
+                    <TextBlock x:Name="FriendsBannerText" FontSize="13" TextWrapping="Wrap" VerticalAlignment="Center" />
+                </DockPanel>
+            </Border>
+
+            <!-- Швидка статистика: ігри, загальний час, друзі зараз у Steam -->
+            <Grid Margin="0,0,0,16">
                 <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="16" />
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="16" />
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
 
-                <!-- Вік акаунту: дані з поточного користувача, без запитів -->
                 <Border Grid.Column="0" Style="{StaticResource SectionCard}">
                     <StackPanel>
-                        <DockPanel>
-                            <Border x:Name="AccountBadgeBorder" DockPanel.Dock="Right" Style="{StaticResource Badge}"
-                                    VerticalAlignment="Top" Visibility="Collapsed">
-                                <TextBlock x:Name="AccountBadgeText" FontSize="12" FontWeight="Medium" />
-                            </Border>
-                            <TextBlock Text="У Steam" Style="{StaticResource StatLabel}" />
-                        </DockPanel>
-                        <TextBlock x:Name="AccountAgeText" Style="{StaticResource StatValue}" />
-                        <TextBlock x:Name="AccountSinceText" Style="{StaticResource StatCaption}" />
+                        <TextBlock Text="Ігор у бібліотеці" Style="{StaticResource StatLabel}" FontSize="12" />
+                        <TextBlock x:Name="GamesCountText" Text="…" Style="{StaticResource StatValue}" />
+                        <TextBlock x:Name="GamesCaptionText" Style="{StaticResource StatCaption}" FontSize="12" />
                     </StackPanel>
                 </Border>
 
-                <!-- Друзі онлайн: окремий запит, свій стан -->
-                <Grid Grid.Column="2">
-                    <Border x:Name="FriendsCard" Style="{StaticResource SectionCard}" Visibility="Collapsed">
-                        <StackPanel>
-                            <DockPanel>
-                                <Button x:Name="OpenRadarButton" DockPanel.Dock="Right" Content="Відкрити радар"
-                                        Style="{StaticResource SecondaryButton}" VerticalAlignment="Top"
-                                        Click="OpenRadarButton_Click" />
-                                <TextBlock Text="Друзі онлайн зараз" Style="{StaticResource StatLabel}" />
-                            </DockPanel>
-                            <TextBlock x:Name="FriendsOnlineText" Style="{StaticResource StatValue}" Foreground="{StaticResource Success}" />
-                            <TextBlock x:Name="FriendsCaptionText" Style="{StaticResource StatCaption}" />
-                        </StackPanel>
-                    </Border>
+                <Border Grid.Column="2" Style="{StaticResource SectionCard}">
+                    <StackPanel>
+                        <TextBlock Text="Загальний час" Style="{StaticResource StatLabel}" FontSize="12" />
+                        <TextBlock x:Name="TotalHoursText" Text="…" Style="{StaticResource StatValue}" Foreground="{StaticResource Accent}" />
+                        <TextBlock Text="за весь час у Steam" Style="{StaticResource StatCaption}" FontSize="12" />
+                    </StackPanel>
+                </Border>
 
-                    <controls:StateView x:Name="FriendsState" HorizontalAlignment="Left" />
-                </Grid>
+                <Border Grid.Column="4" Style="{StaticResource SectionCard}">
+                    <StackPanel>
+                        <TextBlock Text="Друзі зараз у Steam" Style="{StaticResource StatLabel}" FontSize="12" />
+                        <TextBlock x:Name="FriendsOnlineText" Text="…" Style="{StaticResource StatValue}" Foreground="{StaticResource Success}" />
+                        <TextBlock x:Name="FriendsCaptionText" Style="{StaticResource StatCaption}" FontSize="12" />
+                    </StackPanel>
+                </Border>
             </Grid>
 
-            <!-- Бібліотека -->
-            <DockPanel Margin="0,0,0,12">
-                <Button DockPanel.Dock="Right" Content="Уся бібліотека" Style="{StaticResource SecondaryButton}"
-                        VerticalAlignment="Center" Click="OpenLibraryButton_Click" />
-                <TextBlock Text="Бібліотека" Style="{StaticResource Heading}" FontSize="16" VerticalAlignment="Center" />
-            </DockPanel>
+            <!-- «Нещодавно грав» і «Друзі зараз» -->
+            <Grid Margin="0,0,0,20">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="1.75*" />
+                    <ColumnDefinition Width="16" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
 
-            <Grid>
-                <Grid x:Name="LibraryCards" Visibility="Collapsed">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="16" />
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="16" />
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="16" />
-                        <ColumnDefinition Width="1.4*" />
-                    </Grid.ColumnDefinitions>
+                <Border Grid.Column="0" Style="{StaticResource SectionCard}">
+                    <StackPanel>
+                        <TextBlock Text="Нещодавно грав" Style="{StaticResource Heading}" />
+                        <TextBlock Text="Ігри з активністю за останні 2 тижні" Style="{StaticResource Muted}" FontSize="12" Margin="0,4,0,12" />
 
-                    <Border Grid.Column="0" Style="{StaticResource SectionCard}">
+                        <TextBlock x:Name="RecentStatusText" Style="{StaticResource Muted}" FontSize="12" Text="Завантажуємо…" />
+
+                        <ItemsControl x:Name="RecentList">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type home:RecentGameRow}">
+                                    <Grid Margin="0,6">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="12" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+
+                                        <!-- Обкладинка: сіра заглушка, поверх — іконка, коли завантажиться -->
+                                        <Border Grid.Column="0" Width="44" Height="22" CornerRadius="4" Background="{StaticResource SurfaceRaised}"
+                                                VerticalAlignment="Center">
+                                            <Border CornerRadius="4">
+                                                <Border.Background>
+                                                    <ImageBrush ImageSource="{Binding IconUrl, Converter={StaticResource ImageUrl}}" Stretch="UniformToFill" />
+                                                </Border.Background>
+                                            </Border>
+                                        </Border>
+
+                                        <StackPanel Grid.Column="2" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Name}" FontSize="13" FontWeight="Medium" TextTrimming="CharacterEllipsis"
+                                                       ToolTip="{Binding Name}" />
+                                            <TextBlock Text="{Binding TotalText}" FontSize="11" Foreground="{StaticResource TextSecondary}" Margin="0,2,0,0" />
+                                        </StackPanel>
+
+                                        <Border Grid.Column="3" Style="{StaticResource Badge}" Background="{StaticResource SuccessSoft}"
+                                                VerticalAlignment="Center" Margin="12,0,0,0">
+                                            <TextBlock Text="{Binding RecentText}" FontSize="11" Foreground="{StaticResource Success}" />
+                                        </Border>
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+
+                <Border Grid.Column="2" Style="{StaticResource SectionCard}">
+                    <DockPanel>
+                        <Button DockPanel.Dock="Bottom" Content="Відкрити Друзі-радар →" Style="{StaticResource LinkButton}"
+                                Margin="0,10,0,0" Click="OpenRadarButton_Click" />
+
                         <StackPanel>
-                            <TextBlock Text="Ігор" Style="{StaticResource StatLabel}" />
-                            <TextBlock x:Name="GamesCountText" Style="{StaticResource StatValue}" />
-                            <TextBlock Text="у бібліотеці" Style="{StaticResource StatCaption}" />
-                        </StackPanel>
-                    </Border>
+                            <TextBlock Text="Друзі зараз" Style="{StaticResource Heading}" Margin="0,0,0,10" />
 
-                    <Border Grid.Column="2" Style="{StaticResource SectionCard}">
-                        <StackPanel>
-                            <TextBlock Text="Усього годин" Style="{StaticResource StatLabel}" />
-                            <TextBlock x:Name="TotalHoursText" Style="{StaticResource StatValue}" Foreground="{StaticResource Accent}" />
-                            <TextBlock Text="за весь час" Style="{StaticResource StatCaption}" />
-                        </StackPanel>
-                    </Border>
+                            <TextBlock x:Name="FriendsNowStatusText" Style="{StaticResource Muted}" FontSize="12" Text="Завантажуємо…" />
 
-                    <Border Grid.Column="4" Style="{StaticResource SectionCard}">
-                        <StackPanel>
-                            <TextBlock Text="Не запускались" Style="{StaticResource StatLabel}" />
-                            <TextBlock x:Name="NeverPlayedText" Style="{StaticResource StatValue}" Foreground="{StaticResource Warning}" />
-                            <TextBlock Text="жодного разу" Style="{StaticResource StatCaption}" />
-                        </StackPanel>
-                    </Border>
+                            <ItemsControl x:Name="FriendsNowList">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate DataType="{x:Type home:FriendNowRow}">
+                                        <DockPanel Margin="0,5">
+                                            <!-- Аватар: коло з першою літерою, поверх — картинка, якщо завантажилась; точка — статус -->
+                                            <Grid DockPanel.Dock="Left" Width="26" Height="26" VerticalAlignment="Center">
+                                                <Ellipse Fill="{Binding AvatarBrush}" />
+                                                <TextBlock Text="{Binding Initial}" FontSize="10" FontWeight="Bold" Foreground="{StaticResource TextOnAccent}"
+                                                           HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                                <Ellipse>
+                                                    <Ellipse.Fill>
+                                                        <ImageBrush ImageSource="{Binding AvatarUrl, Converter={StaticResource ImageUrl}}" Stretch="UniformToFill" />
+                                                    </Ellipse.Fill>
+                                                </Ellipse>
+                                                <Ellipse Width="9" Height="9" Fill="{Binding StatusBrush}" Stroke="{StaticResource Surface}" StrokeThickness="2"
+                                                         HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,-1,-1" />
+                                            </Grid>
 
-                    <Border Grid.Column="6" Style="{StaticResource SectionCard}">
-                        <StackPanel>
-                            <TextBlock Text="Найдовше не запускана" Style="{StaticResource StatLabel}" />
-                            <TextBlock x:Name="OldestGameText" Style="{StaticResource StatValue}" FontSize="18"
-                                       Margin="0,12,0,8" TextTrimming="CharacterEllipsis" />
-                            <TextBlock x:Name="OldestGameCaption" Style="{StaticResource StatCaption}" />
+                                            <StackPanel Margin="10,0,0,0" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding Name}" FontSize="13" TextTrimming="CharacterEllipsis" />
+                                                <TextBlock Text="{Binding StatusLine}" FontSize="11" Foreground="{Binding StatusBrush}"
+                                                           TextTrimming="CharacterEllipsis" ToolTip="{Binding StatusLine}" Margin="0,1,0,0" />
+                                            </StackPanel>
+                                        </DockPanel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
                         </StackPanel>
-                    </Border>
-                </Grid>
+                    </DockPanel>
+                </Border>
+            </Grid>
 
-                <controls:StateView x:Name="LibraryState" HorizontalAlignment="Left" />
+            <!-- Модулі: уся картка — перехід. Tag — ключ екрана, як у пункті бічного меню -->
+            <TextBlock Text="МОДУЛІ" Style="{StaticResource Overline}" Margin="0,0,0,10" />
+
+            <Grid ButtonBase.Click="ModuleCard_Click">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="12" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="12" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="12" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <Button Grid.Column="0" Style="{StaticResource ModuleCard}" Tag="AchievementPlanner">
+                    <StackPanel>
+                        <TextBlock Text="Досягнення" FontSize="14" FontWeight="SemiBold" />
+                        <TextBlock Text="Плануй, які досягнення закрити далі" Style="{StaticResource Muted}" FontSize="12" Margin="0,6,0,0" />
+                        <TextBlock Text="Відкрити →" FontSize="12" Foreground="{StaticResource Accent}" Margin="0,8,0,0" />
+                    </StackPanel>
+                </Button>
+
+                <Button Grid.Column="2" Style="{StaticResource ModuleCard}" Tag="Comparison">
+                    <StackPanel>
+                        <TextBlock Text="Час гри з друзями" FontSize="14" FontWeight="SemiBold" />
+                        <TextBlock Text="Порівняй свій час у грі з друзями" Style="{StaticResource Muted}" FontSize="12" Margin="0,6,0,0" />
+                        <TextBlock Text="Відкрити →" FontSize="12" Foreground="{StaticResource Accent}" Margin="0,8,0,0" />
+                    </StackPanel>
+                </Button>
+
+                <Button Grid.Column="4" Style="{StaticResource ModuleCard}" Tag="Matchmaker">
+                    <StackPanel>
+                        <TextBlock Text="Co-op Matchmaker" FontSize="14" FontWeight="SemiBold" />
+                        <TextBlock Text="Підбери гру, яка є в усієї компанії" Style="{StaticResource Muted}" FontSize="12" Margin="0,6,0,0" />
+                        <TextBlock Text="Відкрити →" FontSize="12" Foreground="{StaticResource Accent}" Margin="0,8,0,0" />
+                    </StackPanel>
+                </Button>
+
+                <Button Grid.Column="6" Style="{StaticResource ModuleCard}" Tag="Library">
+                    <StackPanel>
+                        <TextBlock Text="Бібліотека" FontSize="14" FontWeight="SemiBold" />
+                        <!-- Текст підставляється з бібліотеки: «97 ігор чекають на запуск» -->
+                        <TextBlock x:Name="LibraryModuleText" Text="Усі ігри з сортуванням і фільтрами" Style="{StaticResource Muted}"
+                                   FontSize="12" Margin="0,6,0,0" />
+                        <TextBlock Text="Відкрити →" FontSize="12" Foreground="{StaticResource Accent}" Margin="0,8,0,0" />
+                    </StackPanel>
+                </Button>
             </Grid>
         </StackPanel>
     </ScrollViewer>

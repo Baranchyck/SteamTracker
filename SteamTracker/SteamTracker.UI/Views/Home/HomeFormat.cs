@@ -1,11 +1,16 @@
 using System.Globalization;
+using SteamTracker.Domain.Models;
+using SteamTracker.UI.Views.Comparison;
+using SteamTracker.UI.Views.FriendsRadar;
+using SteamTracker.UI.Views.Library;
 
 namespace SteamTracker.UI.Views.Home
 {
     public enum AccountBadge { None, Newbie, Veteran }
 
     /// <summary>
-    /// Вік акаунту для картки «У Steam» на головному екрані.
+    /// Тексти й відбір даних для головного екрана (макет «02 · Головна»).
+    /// Вік акаунту — з картки «У Steam» (#89), решта — з редизайну за макетом (#145).
     /// </summary>
     internal static class HomeFormat
     {
@@ -60,5 +65,72 @@ namespace SteamTracker.UI.Views.Home
 
         public static string Since(DateTimeOffset created) =>
             "з " + created.ToLocalTime().ToString("d MMMM yyyy", Uk);
+
+        // ---------- шапка ----------
+
+        /// <summary>«Привіт, yulian_k!»; без ніка — просто «Привіт!».</summary>
+        public static string Greeting(string? name) =>
+            string.IsNullOrWhiteSpace(name) ? "Привіт!" : $"Привіт, {name.Trim()}!";
+
+        // ---------- бібліотека ----------
+
+        /// <summary>Ігри, у які майже не грали: менше години, як у списку «Майже не грав» на екрані бібліотеки.</summary>
+        public static int BarelyPlayedCount(IEnumerable<OwnedGame> games) =>
+            games.Count(g => g.PlaytimeForeverMinutes < LibraryFormat.BarelyPlayedMinutes);
+
+        /// <summary>Підпис під кількістю ігор: «з них 97 майже без запуску».</summary>
+        public static string BarelyPlayedCaption(int count) => count == 0
+            ? "у кожну вже грав понад годину"
+            : $"з них {LibraryFormat.Count(count)} майже без запуску";
+
+        /// <summary>Опис картки модуля «Бібліотека»: «97 ігор чекають на запуск», «1 гра чекає на запуск».</summary>
+        public static string WaitingForLaunch(int count)
+        {
+            if (count == 0)
+            {
+                return "Усі ігри вже запускались";
+            }
+
+            string verb = count % 10 == 1 && count % 100 != 11 ? "чекає" : "чекають";
+            return $"{LibraryFormat.Games(count)} {verb} на запуск";
+        }
+
+        /// <summary>
+        /// «Нещодавно грав»: ігри з активністю за 2 тижні, більше часу — вище; за рівного часу — за назвою.
+        /// </summary>
+        public static IReadOnlyList<OwnedGame> RecentlyPlayed(IEnumerable<OwnedGame> games, int max) =>
+            games
+                .Where(g => g.Playtime2WeeksMinutes > 0)
+                .OrderByDescending(g => g.Playtime2WeeksMinutes)
+                .ThenBy(g => g.Name, StringComparer.CurrentCultureIgnoreCase)
+                .Take(max)
+                .ToList();
+
+        /// <summary>Бейдж «+6 год за 2 тижні»; менше години — у хвилинах, як на екрані порівняння.</summary>
+        public static string RecentPlaytime(int minutes) => $"+{ComparisonFormat.Hours(minutes)} за 2 тижні";
+
+        /// <summary>Під назвою гри: «Усього 126 год».</summary>
+        public static string TotalPlaytime(int minutes) => "Усього " + LibraryFormat.TotalHours(minutes);
+
+        // ---------- друзі ----------
+
+        /// <summary>Друзі, які зараз у Steam: усі, крім офлайн (у грі, онлайн, відійшли).</summary>
+        public static bool IsInSteam(PlayerPresence friend) => FriendStatus.GroupOf(friend) != FriendGroup.Offline;
+
+        /// <summary>«6 з 12».</summary>
+        public static string OfTotal(int part, int total) => $"{LibraryFormat.Count(part)} з {LibraryFormat.Count(total)}";
+
+        /// <summary>«3 у грі · 3 онлайн»: «онлайн» — ті, хто в Steam, але не в грі.</summary>
+        public static string FriendsBreakdown(int inSteam, int inGame) =>
+            $"{LibraryFormat.Count(inGame)} у грі · {LibraryFormat.Count(inSteam - inGame)} онлайн";
+
+        /// <summary>Рядок статусу у списку «Друзі зараз»: «У грі · Starfall Tactics» або «Онлайн».</summary>
+        public static string StatusLine(PlayerPresence friend)
+        {
+            string status = FriendStatus.Text(friend);
+            return FriendStatus.IsInGame(friend) && !string.IsNullOrEmpty(friend.CurrentGameName)
+                ? $"{status} · {friend.CurrentGameName}"
+                : status;
+        }
     }
 }
