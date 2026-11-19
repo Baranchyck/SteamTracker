@@ -36,8 +36,38 @@
                             </RadioButton>
                         </StackPanel>
                     </Border>
-                    <Button x:Name="RefreshButton" Content="Оновити" Style="{StaticResource SecondaryButton}" FontSize="12"
-                            Margin="10,0,0,0" Click="Refresh_Click" />
+                    <!-- Кнопка-іконка «оновити»: поки йде запит (кнопка вимкнена), іконка крутиться як спінер -->
+                    <Button x:Name="RefreshButton" Style="{StaticResource SecondaryButton}" Margin="10,0,0,0"
+                            ToolTip="Оновити" AutomationProperties.Name="Оновити" Click="Refresh_Click">
+                        <Path x:Name="RefreshIcon" Width="14" Height="14" Stretch="Uniform"
+                              Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                              Data="M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"
+                              RenderTransformOrigin="0.5,0.5">
+                            <Path.RenderTransform>
+                                <RotateTransform Angle="0" />
+                            </Path.RenderTransform>
+                            <Path.Style>
+                                <Style TargetType="Path">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsEnabled, ElementName=RefreshButton}" Value="False">
+                                            <DataTrigger.EnterActions>
+                                                <BeginStoryboard x:Name="SpinStoryboard">
+                                                    <Storyboard>
+                                                        <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(RotateTransform.Angle)"
+                                                                         From="0" To="360" Duration="0:0:0.9"
+                                                                         RepeatBehavior="Forever" />
+                                                    </Storyboard>
+                                                </BeginStoryboard>
+                                            </DataTrigger.EnterActions>
+                                            <DataTrigger.ExitActions>
+                                                <StopStoryboard BeginStoryboardName="SpinStoryboard" />
+                                            </DataTrigger.ExitActions>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Path.Style>
+                        </Path>
+                    </Button>
                 </StackPanel>
                 <StackPanel>
                     <TextBlock Text="Друзі-радар" Style="{StaticResource Title}" />
