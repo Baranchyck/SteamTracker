@@ -45,9 +45,11 @@
                             <Ellipse x:Name="AvatarImage" Visibility="Collapsed" />
                         </Grid>
 
-                        <StackPanel Margin="10,0,0,0" VerticalAlignment="Center">
-                            <TextBlock x:Name="UserNameText" TextTrimming="CharacterEllipsis" />
-                            <TextBlock x:Name="VisibilityText" Style="{StaticResource Small}" />
+                        <StackPanel Margin="10,0,8,0" VerticalAlignment="Center">
+                            <TextBlock x:Name="UserNameText" TextTrimming="CharacterEllipsis"
+                                       ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}" />
+                            <TextBlock x:Name="VisibilityText" Style="{StaticResource Small}" TextTrimming="CharacterEllipsis"
+                                       ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}" />
                         </StackPanel>
                     </DockPanel>
                 </Border>
