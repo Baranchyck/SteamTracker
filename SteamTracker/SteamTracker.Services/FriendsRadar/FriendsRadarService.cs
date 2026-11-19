@@ -1,4 +1,6 @@
-﻿using SteamTracker.Domain.Abstractions;
+﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
+using SteamTracker.Domain.Abstractions;
 using SteamTracker.Domain.Models;
 using SteamTracker.Services.Common;
 
@@ -8,11 +10,15 @@ public class FriendsRadarService : IFriendsRadarService
 {
     private readonly ISteamApiClient _steamApi;
     private readonly IAuthService _auth;
+    private readonly ILogger<FriendsRadarService> _logger;
 
-    public FriendsRadarService(ISteamApiClient steamApi, IAuthService auth)
+    // Логер необов'язковий: у тестах сервіс створюється без нього (NullLogger), DI підставляє справжній
+    public FriendsRadarService(
+        ISteamApiClient steamApi, IAuthService auth, ILogger<FriendsRadarService>? logger = null)
     {
         _steamApi = steamApi;
         _auth = auth;
+        _logger = logger ?? NullLogger<FriendsRadarService>.Instance;
     }
 
     public async Task<ServiceResult<IReadOnlyList<PlayerPresence>>> GetFriendsAsync(
@@ -28,8 +34,11 @@ public class FriendsRadarService : IFriendsRadarService
         {
             var friendIds = await _steamApi.GetFriendIdsAsync(user.SteamId, ct);
             if (friendIds is null)
+            {
+                _logger.LogWarning("FriendsRadar: список друзів прихований налаштуваннями приватності");
                 return ServiceCall.Private<IReadOnlyList<PlayerPresence>>(
                     "Список друзів прихований налаштуваннями приватності.");
+            }
 
             // Друзів немає — це не помилка, а просто порожній радар
             if (friendIds.Count == 0)
@@ -47,7 +56,8 @@ public class FriendsRadarService : IFriendsRadarService
                 .ToList();
 
             return new ServiceResult<IReadOnlyList<PlayerPresence>>(sorted, DataStatus.Available);
-        }, "Не вдалося отримати список друзів зі Steam. Спробуйте пізніше.");
+        }, "Не вдалося отримати список друзів зі Steam. Спробуйте пізніше.",
+            _logger, "FriendsRadar: не вдалося отримати список друзів зі Steam");
     }
 
     // Для сторонніх (non-Steam) ігор CurrentGameId == null, але назва гри є — це теж "в грі"

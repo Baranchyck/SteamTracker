@@ -1,4 +1,6 @@
 ﻿using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using SteamTracker.Domain.Abstractions;
 using SteamTracker.Domain.Models;
 
@@ -18,12 +20,16 @@ public class PriceAnalyzerService : IPriceAnalyzerService
 
     private readonly ILibraryService _library;
     private readonly IStoreClient _store;
+    private readonly ILogger<PriceAnalyzerService> _logger;
     private readonly MemoryCache _cache = new(new MemoryCacheOptions());
 
-    public PriceAnalyzerService(ILibraryService library, IStoreClient store)
+    // Логер необов'язковий: у тестах сервіс створюється без нього (NullLogger), DI підставляє справжній
+    public PriceAnalyzerService(
+        ILibraryService library, IStoreClient store, ILogger<PriceAnalyzerService>? logger = null)
     {
         _library = library;
         _store = store;
+        _logger = logger ?? NullLogger<PriceAnalyzerService>.Instance;
     }
 
     public async Task<ServiceResult<PriceAnalysis>> GetAnalysisAsync(CancellationToken ct = default)
@@ -45,9 +51,14 @@ public class PriceAnalyzerService : IPriceAnalyzerService
             Note: Note);
 
         // Ігри, для яких Store нічого не повернув, — Store недоступний (429, мережа): це фолбек, а не помилка
-        string? message = games.Any(g => !prices.ContainsKey(g.AppId))
-            ? "Не вдалося завантажити ціни зі Steam Store, для частини ігор показано лише час гри."
-            : null;
+        int withoutPrice = games.Count(g => !prices.ContainsKey(g.AppId));
+        string? message = null;
+        if (withoutPrice > 0)
+        {
+            _logger.LogWarning("PricePerHour: appdetails не повернув ціну для {Missing} з {Total} ігор, показано лише час гри",
+                withoutPrice, games.Count);
+            message = "Не вдалося завантажити ціни зі Steam Store, для частини ігор показано лише час гри.";
+        }
 
         return new(analysis, DataStatus.Available, message);
     }

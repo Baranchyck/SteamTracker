@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using SteamTracker.Domain.Abstractions;
 using SteamTracker.Domain.Models;
 using SteamTracker.Services.Common;
@@ -16,12 +18,19 @@ public class MatchmakerService : IMatchmakerService
     private readonly ISteamApiClient _steamApi;
     private readonly IAuthService _auth;
     private readonly ISteamIdResolver _resolver;
+    private readonly ILogger<MatchmakerService> _logger;
 
-    public MatchmakerService(ISteamApiClient steamApi, IAuthService auth, ISteamIdResolver resolver)
+    // Логер необов'язковий: у тестах сервіс створюється без нього (NullLogger), DI підставляє справжній
+    public MatchmakerService(
+        ISteamApiClient steamApi,
+        IAuthService auth,
+        ISteamIdResolver resolver,
+        ILogger<MatchmakerService>? logger = null)
     {
         _steamApi = steamApi;
         _auth = auth;
         _resolver = resolver;
+        _logger = logger ?? NullLogger<MatchmakerService>.Instance;
     }
 
     public async Task<ServiceResult<MatchResult>> FindCommonGamesAsync(
@@ -90,6 +99,9 @@ public class MatchmakerService : IMatchmakerService
                 .ToList();
 
             var hidden = participants.Where(p => p.LibraryHidden).ToList();
+            if (hidden.Count > 0)
+                _logger.LogWarning("Matchmaker: у {Count} з {Total} учасників бібліотека прихована",
+                    hidden.Count, participants.Count);
 
             // Прихована бібліотека не обнуляє перетин — учасник просто не бере в ньому участі.
             // Але з однією відкритою бібліотекою "спільних" ігор не буває.
@@ -107,7 +119,8 @@ public class MatchmakerService : IMatchmakerService
 
             var result = new MatchResult(participants, common, invalid, hidden);
             return new ServiceResult<MatchResult>(result, DataStatus.Available, message);
-        }, "Не вдалося отримати дані зі Steam. Спробуйте пізніше.");
+        }, "Не вдалося отримати дані зі Steam. Спробуйте пізніше.",
+            _logger, "Matchmaker: не вдалося отримати дані учасників зі Steam");
     }
 
     private static IReadOnlyList<CommonGame> Intersect(

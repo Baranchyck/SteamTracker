@@ -1,4 +1,5 @@
-﻿using SteamTracker.Domain.Exceptions;
+﻿using Microsoft.Extensions.Logging;
+using SteamTracker.Domain.Exceptions;
 using SteamTracker.Domain.Models;
 
 namespace SteamTracker.Services.Common;
@@ -13,16 +14,22 @@ internal static class ServiceCall
 
     public static ServiceResult<T> Private<T>(string message) => new(default, DataStatus.Private, message);
 
-    // OperationCanceledException не ловимо: скасування має дійти до UI
+    // OperationCanceledException не ловимо: скасування має дійти до UI.
+    // Збій Steam логуємо як Error разом із винятком (#40); errorMessage — для UI, logMessage — для файлу логів
     public static async Task<ServiceResult<T>> RunAsync<T>(
-        Func<Task<ServiceResult<T>>> call, string errorMessage)
+        Func<Task<ServiceResult<T>>> call,
+        string errorMessage,
+        ILogger logger,
+        string logMessage,
+        params object?[] logArgs)
     {
         try
         {
             return await call();
         }
-        catch (SteamApiException)
+        catch (SteamApiException ex)
         {
+            logger.LogError(ex, logMessage, logArgs);
             return Error<T>(errorMessage);
         }
     }

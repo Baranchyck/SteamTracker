@@ -1,4 +1,6 @@
 ﻿using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using SteamTracker.Domain.Abstractions;
 using SteamTracker.Domain.Models;
 using SteamTracker.Services.Common;
@@ -11,12 +13,15 @@ public class LibraryService : ILibraryService
 
     private readonly ISteamApiClient _steamApi;
     private readonly IAuthService _auth;
+    private readonly ILogger<LibraryService> _logger;
     private readonly MemoryCache _cache = new(new MemoryCacheOptions());
 
-    public LibraryService(ISteamApiClient steamApi, IAuthService auth)
+    // Логер необов'язковий: у тестах сервіс створюється без нього (NullLogger), DI підставляє справжній
+    public LibraryService(ISteamApiClient steamApi, IAuthService auth, ILogger<LibraryService>? logger = null)
     {
         _steamApi = steamApi;
         _auth = auth;
+        _logger = logger ?? NullLogger<LibraryService>.Instance;
     }
 
     public async Task<ServiceResult<IReadOnlyList<OwnedGame>>> GetMyLibraryAsync(
@@ -35,12 +40,16 @@ public class LibraryService : ILibraryService
             var games = await _steamApi.GetOwnedGamesAsync(user.SteamId, ct);
 
             if (games is null)
+            {
+                _logger.LogWarning("Library: бібліотека прихована налаштуваннями приватності");
                 return ServiceCall.Private<IReadOnlyList<OwnedGame>>(
                     "Бібліотека прихована налаштуваннями приватності Steam.");
+            }
 
             _cache.Set(cacheKey, games, CacheTtl);
             return new(ApplyFilter(games, filter), DataStatus.Available);
-        }, "Не вдалося отримати бібліотеку зі Steam. Спробуйте пізніше.");
+        }, "Не вдалося отримати бібліотеку зі Steam. Спробуйте пізніше.",
+            _logger, "Library: не вдалося отримати бібліотеку зі Steam");
     }
 
     private static IReadOnlyList<OwnedGame> ApplyFilter(

@@ -112,6 +112,16 @@ dotnet user-secrets set "Steam:ApiKey" "<твій ключ>" --project SteamTrac
 
 **Для зібраного `.exe` — `appsettings.json`.** Скопіюй `SteamTracker.UI/appsettings.example.json` в `appsettings.json` поруч із `.exe` (або в `SteamTracker.UI/` перед збіркою), впиши ключ і постав `"UseFakes": false`. `appsettings.json` є в `.gitignore`. Якщо ключ задано в обох місцях, user-secrets мають пріоритет.
 
+### Логи
+
+Застосунок пише журнал у `%LocalAppData%\SteamTracker\logs\steamtracker-yyyyMMdd.log` (новий файл щодня, поза репозиторієм). Рівні:
+
+- `Information` — старт/завершення застосунку, вхід, вихід, відновлення сесії;
+- `Warning` — очікувані збої: приватний профіль або бібліотека, `appdetails` не повернув ціни, неповна конфігурація;
+- `Error` — винятки (Steam API недоступний, помилка ініціалізації БД чи DI-контейнера) разом зі стеком.
+
+Ключ Steam API і параметр `key=` в URL маскуються як `***`; SteamID і ніки в лог не пишуться.
+
 ### Збірка
 
 ```bash

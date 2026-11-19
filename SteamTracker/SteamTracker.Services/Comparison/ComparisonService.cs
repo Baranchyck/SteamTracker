@@ -1,4 +1,6 @@
 ﻿using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using SteamTracker.Domain.Abstractions;
 using SteamTracker.Domain.Models;
 using SteamTracker.Services.Common;
@@ -15,12 +17,16 @@ public class ComparisonService : IComparisonService
 
     private readonly ISteamApiClient _steamApi;
     private readonly IAuthService _auth;
+    private readonly ILogger<ComparisonService> _logger;
     private readonly MemoryCache _cache = new(new MemoryCacheOptions());
 
-    public ComparisonService(ISteamApiClient steamApi, IAuthService auth)
+    // Логер необов'язковий: у тестах сервіс створюється без нього (NullLogger), DI підставляє справжній
+    public ComparisonService(
+        ISteamApiClient steamApi, IAuthService auth, ILogger<ComparisonService>? logger = null)
     {
         _steamApi = steamApi;
         _auth = auth;
+        _logger = logger ?? NullLogger<ComparisonService>.Instance;
     }
 
     public async Task<ServiceResult<GameComparison>> GetComparisonAsync(int appId, CancellationToken ct = default)
@@ -33,7 +39,10 @@ public class ComparisonService : IComparisonService
         {
             var userLibrary = await GetLibraryAsync(user.SteamId, ct);
             if (userLibrary is null)
+            {
+                _logger.LogWarning("Comparison: бібліотека користувача прихована налаштуваннями приватності");
                 return ServiceCall.Private<GameComparison>("Ваша бібліотека прихована налаштуваннями приватності Steam.");
+            }
 
             var userGame = userLibrary.FirstOrDefault(g => g.AppId == appId);
             if (userGame is null)
@@ -41,7 +50,10 @@ public class ComparisonService : IComparisonService
 
             var friendIds = await _steamApi.GetFriendIdsAsync(user.SteamId, ct);
             if (friendIds is null)
+            {
+                _logger.LogWarning("Comparison: список друзів прихований налаштуваннями приватності");
                 return ServiceCall.Private<GameComparison>("Список друзів прихований налаштуваннями приватності.");
+            }
 
             // Неіснуючі SteamID Steam просто не повертає — такі друзі нікуди не потрапляють
             var friends = friendIds.Count == 0
@@ -81,6 +93,10 @@ public class ComparisonService : IComparisonService
                     entries.Add(ToEntry(friend.SteamId, friend.PersonaName, friend.AvatarUrl, game, isUser: false));
             }
 
+            if (privateLibrary.Count > 0)
+                _logger.LogWarning("Comparison: у {Count} друзів бібліотека прихована (appId {AppId})",
+                    privateLibrary.Count, appId);
+
             var ranking = Rank(entries);
 
             var comparison = new GameComparison(
@@ -93,7 +109,8 @@ public class ComparisonService : IComparisonService
                 FriendsWithPrivateLibrary: SortByName(privateLibrary));
 
             return new(comparison, DataStatus.Available);
-        }, "Не вдалося отримати дані друзів зі Steam. Спробуйте пізніше.");
+        }, "Не вдалося отримати дані друзів зі Steam. Спробуйте пізніше.",
+            _logger, "Comparison: не вдалося отримати дані друзів зі Steam (appId {AppId})", appId);
     }
 
     private async Task<IReadOnlyList<OwnedGame>?> GetLibraryAsync(string steamId, CancellationToken ct)

@@ -1,4 +1,6 @@
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using SteamTracker.Domain.Abstractions;
 using SteamTracker.Domain.Exceptions;
 using SteamTracker.Domain.Models;
@@ -18,12 +20,16 @@ public class AchievementService : IAchievementService
 
     private readonly ISteamApiClient _steamApi;
     private readonly IAuthService _auth;
+    private readonly ILogger<AchievementService> _logger;
     private readonly MemoryCache _cache = new(new MemoryCacheOptions());
 
-    public AchievementService(ISteamApiClient steamApi, IAuthService auth)
+    // Логер необов'язковий: у тестах сервіс створюється без нього (NullLogger), DI підставляє справжній
+    public AchievementService(
+        ISteamApiClient steamApi, IAuthService auth, ILogger<AchievementService>? logger = null)
     {
         _steamApi = steamApi;
         _auth = auth;
+        _logger = logger ?? NullLogger<AchievementService>.Instance;
     }
 
     public async Task<ServiceResult<IReadOnlyList<AchievementGameProgress>>> GetGamesInProgressAsync(
@@ -37,8 +43,11 @@ public class AchievementService : IAchievementService
         {
             var games = await GetOwnedGamesAsync(user.SteamId, ct);
             if (games is null)
+            {
+                _logger.LogWarning("Achievements: бібліотека прихована налаштуваннями приватності");
                 return ServiceCall.Private<IReadOnlyList<AchievementGameProgress>>(
                     "Бібліотека прихована налаштуваннями приватності Steam.");
+            }
 
             // Тільки ігри зі статистикою: для решти Steam однаково відповість "no stats"
             var candidates = games.Where(g => g.HasCommunityVisibleStats).ToList();
@@ -61,8 +70,11 @@ public class AchievementService : IAchievementService
 
             // Деталі ігор закриті для всіх ігор одразу — це налаштування профілю, а не конкретної гри
             if (loaded.All(x => x.Achievements is null))
+            {
+                _logger.LogWarning("Achievements: статистика ігор прихована налаштуваннями приватності");
                 return ServiceCall.Private<IReadOnlyList<AchievementGameProgress>>(
                     "Статистика ігор прихована в налаштуваннях приватності Steam.");
+            }
 
             var inProgress = loaded
                 .Where(x => x.Achievements is not null)
@@ -73,7 +85,8 @@ public class AchievementService : IAchievementService
                 .ToList();
 
             return new ServiceResult<IReadOnlyList<AchievementGameProgress>>(inProgress, DataStatus.Available);
-        }, "Не вдалося отримати ачівки зі Steam. Спробуйте пізніше.");
+        }, "Не вдалося отримати ачівки зі Steam. Спробуйте пізніше.",
+            _logger, "Achievements: не вдалося отримати список ігор з ачівками зі Steam");
     }
 
     public async Task<ServiceResult<AchievementPlan>> GetPlanAsync(int appId, CancellationToken ct = default)
@@ -90,14 +103,18 @@ public class AchievementService : IAchievementService
         {
             achievements = await GetAchievementsAsync(user.SteamId, appId, ct);
         }
-        catch (SteamApiException)
+        catch (SteamApiException ex)
         {
+            _logger.LogError(ex, "Achievements: не вдалося отримати ачівки гри {AppId} зі Steam", appId);
             return ServiceCall.Error<AchievementPlan>("Не вдалося отримати ачівки зі Steam. Спробуйте пізніше.");
         }
 
         if (achievements is null)
+        {
+            _logger.LogWarning("Achievements: статистика гри {AppId} прихована налаштуваннями приватності", appId);
             return ServiceCall.Private<AchievementPlan>(
                 "Статистика гри прихована в налаштуваннях приватності Steam.");
+        }
 
         if (achievements.Count == 0)
             return new(new AchievementPlan(appId, 0, 0, Array.Empty<PlannedAchievement>()), DataStatus.Available);
@@ -109,8 +126,10 @@ public class AchievementService : IAchievementService
         {
             global = await GetGlobalPercentagesAsync(appId, ct);
         }
-        catch (SteamApiException)
+        catch (SteamApiException ex)
         {
+            // Фолбек, а не збій: план показуємо, просто без сортування за складністю
+            _logger.LogWarning(ex, "Achievements: глобальні % для гри {AppId} недоступні, план без сортування", appId);
             global = new Dictionary<string, double>();
             message = "Не вдалося завантажити глобальну статистику, ачівки не відсортовані за складністю.";
         }
