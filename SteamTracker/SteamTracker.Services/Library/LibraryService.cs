@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.Caching.Memory;
 using SteamTracker.Domain.Abstractions;
-using SteamTracker.Domain.Exceptions;
 using SteamTracker.Domain.Models;
+using SteamTracker.Services.Common;
 
 namespace SteamTracker.Services.Library;
 
@@ -24,32 +24,25 @@ public class LibraryService : ILibraryService
     {
         var user = _auth.CurrentUser;
         if (user is null)
-            return new(null, DataStatus.Error, "Спочатку увійдіть через Steam.");
+            return ServiceCall.NotSignedIn<IReadOnlyList<OwnedGame>>();
 
         var cacheKey = $"library:{user.SteamId}";
+        if (_cache.TryGetValue(cacheKey, out IReadOnlyList<OwnedGame>? cached) && cached is not null)
+            return new(ApplyFilter(cached, filter), DataStatus.Available);
 
-        if (!_cache.TryGetValue(cacheKey, out IReadOnlyList<OwnedGame>? games) || games is null)
+        return await ServiceCall.RunAsync<IReadOnlyList<OwnedGame>>(async () =>
         {
-            try
-            {
-                games = await _steamApi.GetOwnedGamesAsync(user.SteamId, ct);
-            }
-            catch (SteamApiException)
-            {
-                return new(null, DataStatus.Error,
-                    "Не вдалося отримати бібліотеку зі Steam. Спробуйте пізніше.");
-            }
+            var games = await _steamApi.GetOwnedGamesAsync(user.SteamId, ct);
 
-            // TODO(#нова-таска): порожній список = приватний профіль, поки клієнт не вміє повертати null
-            if (games.Count == 0)
-                return new(null, DataStatus.Private,
-                    "Бібліотека порожня або профіль приватний.");
+            if (games is null)
+                return ServiceCall.Private<IReadOnlyList<OwnedGame>>(
+                    "Бібліотека прихована налаштуваннями приватності Steam.");
 
             _cache.Set(cacheKey, games, CacheTtl);
-        }
-
-        return new(ApplyFilter(games, filter), DataStatus.Available);
+            return new(ApplyFilter(games, filter), DataStatus.Available);
+        }, "Не вдалося отримати бібліотеку зі Steam. Спробуйте пізніше.");
     }
+
     private static IReadOnlyList<OwnedGame> ApplyFilter(
     IReadOnlyList<OwnedGame> games, LibraryFilter filter)
     {

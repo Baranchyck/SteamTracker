@@ -65,14 +65,28 @@ public class AchievementServiceTests
     }
 
     [Fact]
-    public async Task GetGamesInProgressAsync_EmptyLibrary_ReturnsPrivate()
+    public async Task GetGamesInProgressAsync_HiddenLibrary_ReturnsPrivate()
+    {
+        LogIn();
+        _steamApi.Setup(s => s.GetOwnedGamesAsync(SteamId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((IReadOnlyList<OwnedGame>?)null);
+
+        var result = await CreateService().GetGamesInProgressAsync();
+
+        Assert.Equal(DataStatus.Private, result.Status);
+        Assert.Null(result.Value);
+    }
+
+    [Fact]
+    public async Task GetGamesInProgressAsync_EmptyLibrary_ReturnsAvailableEmpty()
     {
         LogIn();
         SetupGames();
 
         var result = await CreateService().GetGamesInProgressAsync();
 
-        Assert.Equal(DataStatus.Private, result.Status);
+        Assert.Equal(DataStatus.Available, result.Status);
+        Assert.Empty(result.Value!);
     }
 
     [Fact]
