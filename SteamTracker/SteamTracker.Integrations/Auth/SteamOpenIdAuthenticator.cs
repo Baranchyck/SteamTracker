@@ -1,6 +1,6 @@
 ﻿using System.Net;
-using SteamTracker.Domain.Exceptions;
 using SteamTracker.Domain.Abstractions;
+using SteamTracker.Domain.Exceptions;
 namespace SteamTracker.Integrations.Auth;
 
 public sealed class SteamOpenIdAuthenticator : ISteamOpenIdAuthenticator

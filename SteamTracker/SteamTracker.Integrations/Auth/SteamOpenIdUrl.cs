@@ -5,7 +5,7 @@ internal static class SteamOpenIdUrl
     public const string LoginEndpoint = "https://steamcommunity.com/openid/login";
     public const string OpenIdNs = "http://specs.openid.net/auth/2.0";
     public const string IdentifierSelect = "http://specs.openid.net/auth/2.0/identifier_select";
-    
+
     public static string Build(string returnTo, string realm)
     {
         var parameters = new Dictionary<string, string>
@@ -18,9 +18,9 @@ internal static class SteamOpenIdUrl
             ["openid.claimed_id"] = IdentifierSelect
         };
 
-        var query = string.Join("&", parameters.Select(p => 
+        var query = string.Join("&", parameters.Select(p =>
             $"{Uri.EscapeDataString(p.Key)}={Uri.EscapeDataString(p.Value)}"));
-        
+
         return $"{LoginEndpoint}?{query}";
     }
 }

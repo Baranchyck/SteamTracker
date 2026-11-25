@@ -21,6 +21,11 @@ jobs:
       - name: Restore
         run: dotnet restore SteamTracker/SteamTracker.sln
 
+      # Стиль коду з .editorconfig: невідформатований код валить збірку.
+      # Виправити локально: dotnet format SteamTracker/SteamTracker.sln
+      - name: Check formatting
+        run: dotnet format SteamTracker/SteamTracker.sln --no-restore --verify-no-changes
+
       # High і Critical валять збірку; підсумок видно в summary запуску
       - name: Check vulnerable packages
         shell: pwsh

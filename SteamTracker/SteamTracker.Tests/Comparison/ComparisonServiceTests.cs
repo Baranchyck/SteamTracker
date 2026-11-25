@@ -155,14 +155,14 @@ public class ComparisonServiceTests
     [Fact]
     public async Task GetComparison_LoadsAtMostFourLibrariesInParallel()
     {
-        for (int i = 0; i < 12; i++)
+        for (var i = 0; i < 12; i++)
             AddFriend($"F{i}", Game(Portal, i * 10));
 
         int current = 0, max = 0;
         _steamApi.Setup(s => s.GetOwnedGamesAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .Returns(async (string id, CancellationToken _) =>
             {
-                int now = Interlocked.Increment(ref current);
+                var now = Interlocked.Increment(ref current);
                 lock (_libraries) max = Math.Max(max, now);
                 await Task.Delay(20);
                 Interlocked.Decrement(ref current);

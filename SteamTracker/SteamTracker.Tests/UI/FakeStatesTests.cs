@@ -123,7 +123,7 @@ public class ComparisonFakeStatesTests : FakeStatesBase
             Status = StatusOf(scenario),
             ReturnEmpty = scenario == Scenario.Empty
         };
-        int appId = (await library.GetMyLibraryAsync(new LibraryFilter())).Value!.First().AppId;
+        var appId = (await library.GetMyLibraryAsync(new LibraryFilter())).Value!.First().AppId;
 
         var result = await fake.GetComparisonAsync(appId);
 

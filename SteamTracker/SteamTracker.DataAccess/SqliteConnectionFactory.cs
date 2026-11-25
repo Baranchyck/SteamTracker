@@ -1,46 +1,45 @@
 ﻿using System.Data;
 using Microsoft.Data.Sqlite;
 
-namespace SteamTracker.DataAccess
+namespace SteamTracker.DataAccess;
+
+public sealed class SqliteConnectionFactory : IDbConnectionFactory
 {
-    public sealed class SqliteConnectionFactory : IDbConnectionFactory
+    private readonly string _connectionString;
+
+    public SqliteConnectionFactory(string databasePath)
     {
-        private readonly string _connectionString;
+        var dir = Path.GetDirectoryName(databasePath);
 
-        public SqliteConnectionFactory(string databasePath)
+        if (!string.IsNullOrEmpty(dir))
+            Directory.CreateDirectory(dir);
+
+        _connectionString = new SqliteConnectionStringBuilder
         {
-            string? dir = Path.GetDirectoryName(databasePath);
+            DataSource = databasePath,
+            Mode = SqliteOpenMode.ReadWriteCreate,
+            ForeignKeys = true
+        }.ToString();
+    }
 
-            if (!string.IsNullOrEmpty(dir))
-                Directory.CreateDirectory(dir);
-
-            _connectionString = new SqliteConnectionStringBuilder
-            {
-                DataSource = databasePath,
-                Mode = SqliteOpenMode.ReadWriteCreate,
-                ForeignKeys = true
-            }.ToString();
-        }
-
-        public IDbConnection CreateConnection()
+    public IDbConnection CreateConnection()
+    {
+        var connection = new SqliteConnection(_connectionString);
+        try
         {
-            var connection = new SqliteConnection(_connectionString);
-            try
-            {
-                connection.Open();
-                return connection;
-            }
-            catch
-            {
-                connection.Dispose();
-                throw;
-            }
+            connection.Open();
+            return connection;
         }
-
-        public static string GetDefaultPath()
+        catch
         {
-            string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-            return Path.Combine(localAppData, "SteamTracker", "steamtracker.db");
+            connection.Dispose();
+            throw;
         }
+    }
+
+    public static string GetDefaultPath()
+    {
+        var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        return Path.Combine(localAppData, "SteamTracker", "steamtracker.db");
     }
 }

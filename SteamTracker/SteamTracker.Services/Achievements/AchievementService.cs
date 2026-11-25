@@ -160,8 +160,8 @@ public class AchievementService : IAchievementService
         // +N пунктів = N% від загальної кількості ачівок; дробову ачівку не закриєш, тому вгору
         // Множимо вже в decimal: у int добуток переповнюється при великому N (#124).
         // Обрізаємо до Remaining.Count ще в decimal — тоді каст в int завжди безпечний
-        decimal needed = Math.Ceiling((decimal)targetPointsUp * plan.Total / 100m);
-        int take = (int)Math.Min(needed, plan.Remaining.Count);
+        var needed = Math.Ceiling((decimal)targetPointsUp * plan.Total / 100m);
+        var take = (int)Math.Min(needed, plan.Remaining.Count);
 
         // Remaining уже відсортований від найлегших, але план міг прийти не з GetPlanAsync
         var picked = SortByEase(plan.Remaining).Take(take).ToList();

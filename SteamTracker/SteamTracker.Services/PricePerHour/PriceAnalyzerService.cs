@@ -51,7 +51,7 @@ public class PriceAnalyzerService : IPriceAnalyzerService
             Note: Note);
 
         // Ігри, для яких Store нічого не повернув, — Store недоступний (429, мережа): це фолбек, а не помилка
-        int withoutPrice = games.Count(g => !prices.ContainsKey(g.AppId));
+        var withoutPrice = games.Count(g => !prices.ContainsKey(g.AppId));
         string? message = null;
         if (withoutPrice > 0)
         {
@@ -93,9 +93,9 @@ public class PriceAnalyzerService : IPriceAnalyzerService
 
     private static PricePerHourRow ToRow(OwnedGame game, GamePrice? price)
     {
-        bool isFree = price?.IsFree == true;
-        int? cents = isFree ? null : price?.FinalCents;
-        int minutes = game.PlaytimeForeverMinutes;
+        var isFree = price?.IsFree == true;
+        var cents = isFree ? null : price?.FinalCents;
+        var minutes = game.PlaytimeForeverMinutes;
 
         // ціна / (хвилини / 60); при 0 хвилин не ділимо
         decimal? perHour = cents is not null && minutes > 0
@@ -140,7 +140,7 @@ public class PriceAnalyzerService : IPriceAnalyzerService
     private static decimal Median(IEnumerable<int> values)
     {
         var sorted = values.OrderBy(v => v).ToList();
-        int mid = sorted.Count / 2;
+        var mid = sorted.Count / 2;
         return sorted.Count % 2 == 1
             ? sorted[mid]
             : (sorted[mid - 1] + sorted[mid]) / 2m;

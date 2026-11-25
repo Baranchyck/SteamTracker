@@ -246,7 +246,7 @@ public class MatchmakerServiceTests
         _steamApi.Setup(s => s.GetOwnedGamesAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .Returns(async () =>
             {
-                int now = Interlocked.Increment(ref current);
+                var now = Interlocked.Increment(ref current);
                 lock (_existing) max = Math.Max(max, now);
                 await Task.Delay(20);
                 Interlocked.Decrement(ref current);
