@@ -168,7 +168,7 @@ public class AchievementServiceTests
         _steamApi.Setup(s => s.GetPlayerAchievementsAsync(SteamId, It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .Returns(async () =>
             {
-                int now = Interlocked.Increment(ref current);
+                var now = Interlocked.Increment(ref current);
                 InterlockedMax(ref max, now);
                 await Task.Delay(20);
                 Interlocked.Decrement(ref current);
@@ -262,7 +262,10 @@ public class AchievementServiceTests
         });
         SetupGlobal(1, new Dictionary<string, double>
         {
-            ["done"] = 90, ["hard"] = 1.5, ["easy"] = 70, ["mid"] = 30
+            ["done"] = 90,
+            ["hard"] = 1.5,
+            ["easy"] = 70,
+            ["mid"] = 30
         });
 
         var result = await CreateService().GetPlanAsync(1);

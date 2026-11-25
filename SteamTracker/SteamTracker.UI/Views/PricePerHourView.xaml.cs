@@ -1,12 +1,11 @@
 using System.Windows.Controls;
 
-namespace SteamTracker.UI.Views
+namespace SteamTracker.UI.Views;
+
+public partial class PricePerHourView : UserControl
 {
-    public partial class PricePerHourView : UserControl
+    public PricePerHourView()
     {
-        public PricePerHourView()
-        {
-            InitializeComponent();
-        }
+        InitializeComponent();
     }
 }

@@ -72,11 +72,11 @@ public class SteamIdResolver : ISteamIdResolver
             rest = StripPrefix(rest, "www.") ?? rest;
 
             // Query і fragment для профілю нічого не значать: ?l=ukrainian, #comments
-            int tail = rest.IndexOfAny(new[] { '?', '#' });
+            var tail = rest.IndexOfAny(new[] { '?', '#' });
             if (tail >= 0)
                 rest = rest[..tail];
 
-            int slash = rest.IndexOf('/');
+            var slash = rest.IndexOf('/');
             var host = slash >= 0 ? rest[..slash] : rest;
             if (!host.Equals(CommunityHost, StringComparison.OrdinalIgnoreCase))
                 return Fail(SteamIdResolveError.ForeignHost, "Посилання має вести на steamcommunity.com.");

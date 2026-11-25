@@ -158,7 +158,7 @@ public class MatchmakerService : IMatchmakerService
     private static MatchParticipant ToParticipant(
         string steamId, PlayerPresence? profile, SteamProfile user, bool libraryHidden)
     {
-        bool isUser = steamId == user.SteamId;
+        var isUser = steamId == user.SteamId;
         return new MatchParticipant(
             SteamId: steamId,
             PersonaName: profile?.PersonaName ?? (isUser ? user.PersonaName : steamId),

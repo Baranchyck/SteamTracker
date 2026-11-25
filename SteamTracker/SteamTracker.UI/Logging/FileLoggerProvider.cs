@@ -1,5 +1,5 @@
-using System.IO;
 using System.Globalization;
+using System.IO;
 using System.Text;
 using Microsoft.Extensions.Logging;
 
@@ -32,7 +32,7 @@ public sealed class FileLoggerProvider : ILoggerProvider
 
     public static string GetDefaultDirectory()
     {
-        string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
         return Path.Combine(localAppData, "SteamTracker", "logs");
     }
 
@@ -113,7 +113,7 @@ public sealed class FileLoggerProvider : ILoggerProvider
     // SteamTracker.Services.Library.LibraryService -> LibraryService: коротше й читабельніше в рядку логу
     private static string ShortCategory(string category)
     {
-        int dot = category.LastIndexOf('.');
+        var dot = category.LastIndexOf('.');
         return dot >= 0 && dot < category.Length - 1 ? category[(dot + 1)..] : category;
     }
 

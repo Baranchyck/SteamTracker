@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel;
 using System.Diagnostics;
-using SteamTracker.Domain.Exceptions; 
+using SteamTracker.Domain.Exceptions;
 
 namespace SteamTracker.Integrations.Auth;
 

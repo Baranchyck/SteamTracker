@@ -29,7 +29,7 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddSteamTracker(
         this IServiceCollection services, IConfiguration configuration)
     {
-        bool useFakes = configuration.GetValue<bool>(UseFakesKey);
+        var useFakes = configuration.GetValue<bool>(UseFakesKey);
 
         services.AddDatabase();
         if (!useFakes)

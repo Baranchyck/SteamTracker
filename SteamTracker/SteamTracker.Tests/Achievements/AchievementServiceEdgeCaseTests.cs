@@ -177,7 +177,7 @@ public class AchievementServiceEdgeCaseTests
         SetupGames(Enumerable.Range(1, 20).Select(i => Game(i, $"G{i}")).ToArray());
 
         using var cts = new CancellationTokenSource();
-        int calls = 0;
+        var calls = 0;
         _steamApi.Setup(s => s.GetPlayerAchievementsAsync(SteamId, It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .Returns(async (string _, int _, CancellationToken ct) =>
             {

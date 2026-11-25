@@ -1,4 +1,4 @@
-﻿using SteamTracker.Domain.Exceptions; 
+﻿using SteamTracker.Domain.Exceptions;
 using SteamTracker.Integrations.Auth;
 
 namespace SteamTracker.Tests.Auth;

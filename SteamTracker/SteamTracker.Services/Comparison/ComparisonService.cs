@@ -134,9 +134,9 @@ public class ComparisonService : IComparisonService
             .ToList();
 
         var ranked = new List<ComparisonEntry>(sorted.Count);
-        for (int i = 0; i < sorted.Count; i++)
+        for (var i = 0; i < sorted.Count; i++)
         {
-            int rank = i > 0 && sorted[i].PlaytimeForeverMinutes == sorted[i - 1].PlaytimeForeverMinutes
+            var rank = i > 0 && sorted[i].PlaytimeForeverMinutes == sorted[i - 1].PlaytimeForeverMinutes
                 ? ranked[i - 1].Rank
                 : i + 1;
             ranked.Add(sorted[i] with { Rank = rank });
@@ -156,8 +156,8 @@ public class ComparisonService : IComparisonService
         if (played.Count == 0)
             return null;
 
-        decimal average = (decimal)played.Average();
-        int userMinutes = entries.First(e => e.IsCurrentUser).PlaytimeForeverMinutes;
+        var average = (decimal)played.Average();
+        var userMinutes = entries.First(e => e.IsCurrentUser).PlaytimeForeverMinutes;
         return Math.Round(userMinutes / average * 100, 1);
     }
 

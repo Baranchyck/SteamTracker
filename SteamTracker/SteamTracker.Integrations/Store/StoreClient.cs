@@ -100,7 +100,7 @@ public class StoreClient : IStoreClient
         int? finalCents = price.TryGetProperty("final", out var final) && final.TryGetInt32(out var cents)
             ? cents
             : null;
-        string? currency = price.TryGetProperty("currency", out var cur) && cur.ValueKind == JsonValueKind.String
+        var currency = price.TryGetProperty("currency", out var cur) && cur.ValueKind == JsonValueKind.String
             ? cur.GetString()
             : null;
 

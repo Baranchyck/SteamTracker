@@ -2,36 +2,35 @@ using System.Globalization;
 using System.Windows.Data;
 using System.Windows.Media.Imaging;
 
-namespace SteamTracker.UI.Converters
-{
-    /// <summary>
-    /// URL іконки гри → картинка. BitmapImage з http-адресою качається у фоні, тож UI не блокується,
-    /// а поки картинки немає (чи вона не завантажилась), видно заглушку під нею.
-    /// Разом із віртуалізацією списку качаються лише іконки видимих рядків.
-    /// </summary>
-    public sealed class IconUrlConverter : IValueConverter
-    {
-        public object? Convert(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            // Лише http(s): URL іконок приходить зі Steam, а file:// чи інша схема не повинні ні читати диск,
-            // ні кидати виняток із біндингу (BitmapImage для неіснуючого файлу падає на EndInit)
-            if (value is not string url
-                || !Uri.TryCreate(url, UriKind.Absolute, out var uri)
-                || (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
-            {
-                return null;
-            }
+namespace SteamTracker.UI.Converters;
 
-            var image = new BitmapImage();
-            image.BeginInit();
-            image.UriSource = uri;
-            image.DecodePixelWidth = 96; // обкладинка 48 px, ×2 для чіткості на HiDPI
-            image.CreateOptions = BitmapCreateOptions.IgnoreColorProfile;
-            image.EndInit();
-            return image;
+/// <summary>
+/// URL іконки гри → картинка. BitmapImage з http-адресою качається у фоні, тож UI не блокується,
+/// а поки картинки немає (чи вона не завантажилась), видно заглушку під нею.
+/// Разом із віртуалізацією списку качаються лише іконки видимих рядків.
+/// </summary>
+public sealed class IconUrlConverter : IValueConverter
+{
+    public object? Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        // Лише http(s): URL іконок приходить зі Steam, а file:// чи інша схема не повинні ні читати диск,
+        // ні кидати виняток із біндингу (BitmapImage для неіснуючого файлу падає на EndInit)
+        if (value is not string url
+            || !Uri.TryCreate(url, UriKind.Absolute, out var uri)
+            || (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
+        {
+            return null;
         }
 
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) =>
-            throw new NotSupportedException();
+        var image = new BitmapImage();
+        image.BeginInit();
+        image.UriSource = uri;
+        image.DecodePixelWidth = 96; // обкладинка 48 px, ×2 для чіткості на HiDPI
+        image.CreateOptions = BitmapCreateOptions.IgnoreColorProfile;
+        image.EndInit();
+        return image;
     }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) =>
+        throw new NotSupportedException();
 }

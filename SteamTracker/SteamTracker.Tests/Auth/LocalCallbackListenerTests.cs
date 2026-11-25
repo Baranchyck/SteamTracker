@@ -39,6 +39,6 @@ public class LocalCallbackListenerTests
         }
 
         using var second = new LocalCallbackListener(port);
-        second.Start(); 
+        second.Start();
     }
 }
