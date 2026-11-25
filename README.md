@@ -54,7 +54,21 @@ Steam зберігає багато даних про гравця, але по�
 | Залежності | `Microsoft.Extensions.DependencyInjection` |
 | Кеш | `MemoryCache` (бібліотека ігор, 5 хв), щоб не перевищувати ліміти Steam API |
 | Тести | xUnit, Moq |
-| CI | GitHub Actions: збірка і тести на кожен push і PR у `main` |
+| CI | GitHub Actions: збірка, тести й publish на кожен push і PR у `main`; артефакт зі збіркою на push у `main` |
+
+---
+
+## Де взяти збірку
+
+Кожен push у `main` після успішних тестів публікує готовий застосунок. SDK і клонування репозиторію не потрібні.
+
+1. Відкрий [запуски CI на `main`](https://github.com/Baranchyck/SteamTracker/actions/workflows/ci.yml?query=branch%3Amain+event%3Apush) і вибери останній успішний.
+2. Внизу сторінки, в розділі **Artifacts**, завантаж `SteamTracker-win-x64` (потрібен вхід у GitHub).
+3. Розпакуй архів. На комп'ютері має бути [.NET 8 Desktop Runtime (x64)](https://dotnet.microsoft.com/download/dotnet/8.0).
+4. Скопіюй `appsettings.example.json` у `appsettings.json` в тій самій папці. У шаблоні ввімкнені фейкові дані, тож ключ Steam API не потрібен. Для справжнього Steam впиши ключ і постав `"UseFakes": false`.
+5. Запусти `SteamTracker.UI.exe`.
+
+Артефакти зберігаються на GitHub обмежений час (типово 90 днів).
 
 ---
 
@@ -110,7 +124,7 @@ dotnet user-secrets set "Steam:ApiKey" "<твій ключ>" --project SteamTrac
 
 Секрет зберігається поза репозиторієм, у `%APPDATA%\Microsoft\UserSecrets\`.
 
-**Для зібраного `.exe` — `appsettings.json`.** Скопіюй `SteamTracker.UI/appsettings.example.json` в `appsettings.json` поруч із `.exe` (або в `SteamTracker.UI/` перед збіркою), впиши ключ і постав `"UseFakes": false`. `appsettings.json` є в `.gitignore`. Якщо ключ задано в обох місцях, user-secrets мають пріоритет.
+**Для зібраного `.exe` — `appsettings.json`.** Скопіюй `SteamTracker.UI/appsettings.example.json` в `appsettings.json` поруч із `.exe` (або в `SteamTracker.UI/` перед `dotnet build`; `dotnet publish` цей файл навмисно не копіює, щоб ключ не потрапив у збірку для роздачі), впиши ключ і постав `"UseFakes": false`. `appsettings.json` є в `.gitignore`. Якщо ключ задано в обох місцях, user-secrets мають пріоритет.
 
 ### Логи
 
