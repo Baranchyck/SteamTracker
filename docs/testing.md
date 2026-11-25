@@ -108,4 +108,21 @@ dotnet test SteamTracker/SteamTracker.sln -c Release
 - усі запуски — вкладка [Actions](https://github.com/Baranchyck/SteamTracker/actions/workflows/ci.yml) репозиторію; у лозі кроку **Test** видно кожен тест і причину падіння;
 - статус `main` — бейдж CI на початку [README](../README.md).
 
-Workflow: [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) — `windows-latest` (WPF не збирається на Linux), `restore` → `build -c Release` → `test`.
+Workflow: [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) — `windows-latest` (WPF не збирається на Linux), `restore` → перевірка вразливих пакетів → `build -c Release` → `test` → `publish`.
+
+### Перевірка вразливих пакетів
+
+CI перевіряє прямі й транзитивні NuGet-пакети за базою відомих вразливостей ([скрипт](../.github/scripts/check-vulnerable-packages.ps1)):
+
+- **High і Critical** валять збірку;
+- **Low і Moderate** лише показуються;
+- якщо саму перевірку виконати не вдалося, збірка теж падає;
+- результат (пакет, версія, рівень, advisory) видно в summary запуску.
+
+Запустити локально (з кореня репозиторію, після `dotnet restore SteamTracker/SteamTracker.sln`):
+
+```bash
+powershell -ExecutionPolicy Bypass -File .github/scripts/check-vulnerable-packages.ps1
+```
+
+Якщо перевірка впала, онови пакет, а якщо він транзитивний — пакет, який його тягне, або додай пряме посилання на виправлену версію. Перевірка може впасти й без змін у коді, коли для вже використаного пакета з'являється нова вразливість.
