@@ -20,6 +20,13 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- xunit тягне NETStandard.Library 1.6.1, а той — вразливі версії 4.3.0 цих пакетів.
+         Прямі посилання піднімають їх до виправлених -->
+    <PackageReference Include="System.Net.Http" Version="4.3.4" />
+    <PackageReference Include="System.Text.RegularExpressions" Version="4.3.1" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\SteamTracker.DataAccess\SteamTracker.DataAccess.csproj" />
     <ProjectReference Include="..\SteamTracker.Domain\SteamTracker.Domain.csproj" />
     <ProjectReference Include="..\SteamTracker.Integrations\SteamTracker.Integrations.csproj" />
