@@ -27,3 +27,27 @@ jobs:
       # Тести не потребують справжнього Steam API ключа (його в CI немає)
       - name: Test
         run: dotnet test SteamTracker/SteamTracker.sln --no-build -c Release --verbosity normal
+
+      # Публікація виконується і на PR, щоб зламаний publish було видно до злиття.
+      # --self-contained false: на комп'ютері потрібен .NET 8 Desktop Runtime
+      - name: Publish
+        run: dotnet publish SteamTracker/SteamTracker.UI -c Release -r win-x64 --self-contained false -o publish
+
+      # appsettings.json з ключем Steam API не повинен потрапити в артефакт (репозиторій публічний)
+      - name: Check publish has no appsettings.json
+        shell: pwsh
+        run: |
+          $found = Get-ChildItem publish -Recurse -File -Filter 'appsettings*.json' |
+            Where-Object Name -ne 'appsettings.example.json'
+          if ($found) {
+            Write-Error "У publish потрапив файл конфігурації: $($found.Name -join ', ')"
+            exit 1
+          }
+
+      - name: Upload artifact
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@v4
+        with:
+          name: SteamTracker-win-x64
+          path: publish/
+          if-no-files-found: error
