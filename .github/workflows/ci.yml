@@ -34,9 +34,20 @@ jobs:
       - name: Build
         run: dotnet build SteamTracker/SteamTracker.sln --no-restore -c Release
 
-      # Тести не потребують справжнього Steam API ключа (його в CI немає)
+      # Тести не потребують справжнього Steam API ключа (його в CI немає).
+      # Тут же збирається покриття (coverlet); SteamTracker.UI виключено в coverlet.runsettings
       - name: Test
-        run: dotnet test SteamTracker/SteamTracker.sln --no-build -c Release --verbosity normal
+        run: >-
+          dotnet test SteamTracker/SteamTracker.sln --no-build -c Release --verbosity normal
+          --settings SteamTracker/coverlet.runsettings --collect:"XPlat Code Coverage" --results-directory TestResults
+
+      # Лише підсумок покриття по проєктах у summary запуску, без HTML-артефакту
+      - name: Coverage summary
+        shell: pwsh
+        run: |
+          dotnet tool install dotnet-reportgenerator-globaltool --version 5.6.0 --tool-path .tools
+          ./.tools/reportgenerator -reports:"TestResults/**/coverage.cobertura.xml" -targetdir:TestResults/coverage-report -reporttypes:MarkdownSummaryGithub
+          Get-Content TestResults/coverage-report/SummaryGithub.md | Add-Content $env:GITHUB_STEP_SUMMARY
 
       # Публікація виконується і на PR, щоб зламаний publish було видно до злиття.
       # --self-contained false: на комп'ютері потрібен .NET 8 Desktop Runtime
