@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Налаштування збору покриття (coverlet) для CI і локального запуску.
+     Команда запуску — у docs/testing.md, розділ «Як запускати тести» -->
+
+<RunSettings>
+  <DataCollectionRunSettings>
+    <DataCollectors>
+      <DataCollector friendlyName="XPlat code coverage">
+        <Configuration>
+          <Format>cobertura</Format>
+          <!-- WPF-екрани автоматично не тестуємо (docs/testing.md), тож у відсоток їх не рахуємо -->
+          <Exclude>[SteamTracker.UI]*</Exclude>
+        </Configuration>
+      </DataCollector>
+    </DataCollectors>
+  </DataCollectionRunSettings>
+</RunSettings>

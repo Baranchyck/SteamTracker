@@ -105,10 +105,25 @@ dotnet test SteamTracker/SteamTracker.sln -c Release
 
 **Де дивитись результати CI:**
 - у кожному PR — перевірка **CI / build-and-test** внизу сторінки; червона перевірка блокує Merge;
-- усі запуски — вкладка [Actions](https://github.com/Baranchyck/SteamTracker/actions/workflows/ci.yml) репозиторію; у лозі кроку **Test** видно кожен тест і причину падіння;
+- усі запуски — вкладка [Actions](https://github.com/Baranchyck/SteamTracker/actions/workflows/ci.yml) репозиторію; у лозі кроку **Test** видно кожен тест і причину падіння, а на сторінці запуску (summary) — покриття тестами по проєктах;
 - статус `main` — бейдж CI на початку [README](../README.md).
 
-Workflow: [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) — `windows-latest` (WPF не збирається на Linux), `restore` → перевірка вразливих пакетів → `build -c Release` → `test` → `publish`.
+Workflow: [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) — `windows-latest` (WPF не збирається на Linux), `restore` → перевірка вразливих пакетів → `build -c Release` → `test` з покриттям → підсумок покриття → `publish`.
+
+### Покриття тестами
+
+Кожен запуск CI збирає покриття ([coverlet](https://github.com/coverlet-coverage/coverlet)) і показує в summary запуску підсумок від [ReportGenerator](https://github.com/danielpalme/ReportGenerator): % рядків і гілок загалом і по кожному проєкту, з розгортанням до класів.
+
+- `SteamTracker.UI` у відсоток не входить: WPF-екрани перевіряємо вручну (див. [розділ 3](#3-що-свідомо-не-тестуємо-автоматично)). Виключення задано в [`SteamTracker/coverlet.runsettings`](../SteamTracker/coverlet.runsettings).
+- Поріг покриття не задано: CI не падає через низький відсоток, а лише показує його. Падіння покриття в PR — привід для рев'юера попросити тести.
+
+Запустити локально (з кореня репозиторію):
+
+```bash
+dotnet test SteamTracker/SteamTracker.sln --settings SteamTracker/coverlet.runsettings --collect:"XPlat Code Coverage" --results-directory TestResults
+```
+
+Результат — `TestResults/<guid>/coverage.cobertura.xml` (папка в `.gitignore`); звіт із нього будується ReportGenerator так само, як у CI.
 
 ### Перевірка вразливих пакетів
 
